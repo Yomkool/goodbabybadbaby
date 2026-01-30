@@ -14,6 +14,7 @@ interface AuthState {
   user: User | null;
   pets: Pet[];
   hasPets: boolean;
+  hasCompletedOnboarding: boolean;
   isLoading: boolean;
   error: string | null;
 
@@ -30,6 +31,7 @@ interface AuthState {
   clearError: () => void;
   refreshPets: () => Promise<void>;
   addPet: (pet: Pet) => void;
+  skipOnboarding: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -40,6 +42,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   pets: [],
   hasPets: false,
+  hasCompletedOnboarding: false,
   isLoading: true,
   error: null,
 
@@ -66,6 +69,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         ]);
 
         const pets = petsResult.data || [];
+        const hasPets = pets.length > 0;
 
         set({
           status: 'authenticated',
@@ -73,11 +77,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           supabaseUser: session.user,
           user: userResult.data,
           pets,
-          hasPets: pets.length > 0,
+          hasPets,
+          hasCompletedOnboarding: hasPets, // If they have pets, they've completed onboarding
           isLoading: false,
         });
       } else {
-        set({ status: 'unauthenticated', isLoading: false });
+        set({ status: 'unauthenticated', isLoading: false, hasCompletedOnboarding: false });
       }
 
       // Listen for auth changes
@@ -92,6 +97,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           ]);
 
           const pets = petsResult.data || [];
+          const hasPets = pets.length > 0;
 
           set({
             status: 'authenticated',
@@ -99,7 +105,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             supabaseUser: session.user,
             user: userResult.data,
             pets,
-            hasPets: pets.length > 0,
+            hasPets,
+            hasCompletedOnboarding: hasPets,
             isLoading: false,
           });
         } else if (event === 'SIGNED_OUT') {
@@ -110,6 +117,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             user: null,
             pets: [],
             hasPets: false,
+            hasCompletedOnboarding: false,
             isLoading: false,
           });
         } else if (event === 'TOKEN_REFRESHED' && session) {
@@ -206,6 +214,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         user: null,
         pets: [],
         hasPets: false,
+        hasCompletedOnboarding: false,
         isLoading: false,
       });
     } catch (err) {
@@ -258,7 +267,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   // Add a pet to the local state (called after creating a pet)
   addPet: (pet: Pet) => {
     const { pets } = get();
-    set({ pets: [...pets, pet], hasPets: true });
+    set({ pets: [...pets, pet], hasPets: true, hasCompletedOnboarding: true });
+  },
+
+  // Skip onboarding (user chose not to add a pet now)
+  skipOnboarding: () => {
+    set({ hasCompletedOnboarding: true });
   },
 }));
 

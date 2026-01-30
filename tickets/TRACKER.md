@@ -15,9 +15,9 @@
 | 004 | TypeScript Types & Interfaces | ✅ | database, models, navigation, api types |
 | 005 | Authentication Flow | ✅ | Email auth, session persistence, auth store |
 | 006 | Auth Guards & Protected Routing | ✅ | 3-state routing, onboarding flow |
-| 007 | Onboarding - Add First Pet | ⬜ | |
+| 007 | Onboarding - Add First Pet | ✅ | Avatar upload, validation, skip option |
 
-**Phase 1 Progress:** 6/7 complete
+**Phase 1 Progress:** 7/7 complete
 
 ---
 
@@ -144,7 +144,7 @@
 
 | Phase | Complete | Total | % |
 |-------|----------|-------|---|
-| 1. Foundation | 6 | 7 | 86% |
+| 1. Foundation | 7 | 7 | 100% |
 | 2. Core Features | 0 | 11 | 0% |
 | 3. Social Features | 0 | 4 | 0% |
 | 4. Competition | 0 | 4 | 0% |
@@ -154,7 +154,7 @@
 | 8. Sharing | 0 | 1 | 0% |
 | 9. Backend Jobs | 0 | 3 | 0% |
 | 10. Polish | 0 | 9 | 0% |
-| **TOTAL** | **6** | **45** | **13%** |
+| **TOTAL** | **7** | **45** | **16%** |
 
 ---
 
@@ -168,7 +168,7 @@ Core tickets needed for a functional MVP:
 - [x] 004 - TypeScript Types
 - [x] 005 - Authentication
 - [x] 006 - Auth Guards
-- [ ] 007 - Onboarding
+- [x] 007 - Onboarding
 - [ ] 008 - Feed UI
 - [ ] 009 - Feed Data
 - [ ] 011 - Post Overlay
@@ -188,7 +188,7 @@ Core tickets needed for a functional MVP:
 - [ ] 043 - Post Detail
 - [ ] 044 - Error Handling
 
-**MVP Progress:** 6/25 complete
+**MVP Progress:** 7/25 complete
 
 ---
 
@@ -211,4 +211,5 @@ Core tickets needed for a functional MVP:
 | 2026-01-29 | 004 | Completed - database, models, navigation, api types + db:types script |
 | 2026-01-29 | 005 | Completed - Auth store, welcome/login/signup/forgot-password screens |
 | 2026-01-30 | 006 | Completed - 3-state routing, onboarding add-pet, loading screen |
+| 2026-01-30 | 007 | Completed - Avatar upload, image compression, skip option, validation |
 

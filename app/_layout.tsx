@@ -59,14 +59,13 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const router = useRouter();
   const segments = useSegments();
-  const { status, hasPets } = useAuthStore();
+  const { status, hasCompletedOnboarding } = useAuthStore();
 
   useEffect(() => {
     // Cast to string since Expo Router types may not be updated yet
     const firstSegment = segments[0] as string;
     const inAuthGroup = firstSegment === '(auth)';
     const inOnboardingGroup = firstSegment === '(onboarding)';
-    const inTabsGroup = firstSegment === '(tabs)';
 
     if (status === 'unauthenticated') {
       // Not logged in -> go to auth screens
@@ -74,19 +73,19 @@ function RootLayoutNav() {
         router.replace('/(auth)/welcome' as Href);
       }
     } else if (status === 'authenticated') {
-      if (!hasPets) {
-        // Logged in but no pets -> go to onboarding
+      if (!hasCompletedOnboarding) {
+        // Logged in but hasn't completed onboarding -> go to onboarding
         if (!inOnboardingGroup) {
           router.replace('/(onboarding)/add-pet' as Href);
         }
       } else {
-        // Logged in with pets -> go to main app
+        // Logged in and completed onboarding -> go to main app
         if (inAuthGroup || inOnboardingGroup) {
           router.replace('/(tabs)' as Href);
         }
       }
     }
-  }, [status, hasPets, segments, router]);
+  }, [status, hasCompletedOnboarding, segments, router]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
