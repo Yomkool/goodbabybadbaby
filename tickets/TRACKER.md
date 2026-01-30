@@ -1,6 +1,6 @@
 # Good Baby, Bad Baby - Ticket Tracker
 
-> **Last Updated:** 2026-01-28
+> **Last Updated:** 2026-01-29
 > **Status Legend:** ⬜ Not Started | 🟡 In Progress | ✅ Complete | ⏸️ Blocked
 
 ---
@@ -10,14 +10,14 @@
 | # | Ticket | Status | Notes |
 |---|--------|--------|-------|
 | 001 | Project Setup & Infrastructure | ✅ | Expo 54, Zustand, ESLint/Prettier |
-| 002 | Supabase Backend Setup | ⬜ | |
+| 002 | Supabase Backend Setup | ✅ | Supabase client, storage buckets, auth configured |
 | 003 | Database Schema & Migrations | ⬜ | |
 | 004 | TypeScript Types & Interfaces | ⬜ | |
 | 005 | Authentication Flow | ⬜ | |
 | 006 | Auth Guards & Protected Routing | ⬜ | |
 | 007 | Onboarding - Add First Pet | ⬜ | |
 
-**Phase 1 Progress:** 1/7 complete
+**Phase 1 Progress:** 2/7 complete
 
 ---
 
@@ -143,7 +143,7 @@
 
 | Phase | Complete | Total | % |
 |-------|----------|-------|---|
-| 1. Foundation | 1 | 7 | 14% |
+| 1. Foundation | 2 | 7 | 29% |
 | 2. Core Features | 0 | 11 | 0% |
 | 3. Social Features | 0 | 4 | 0% |
 | 4. Competition | 0 | 4 | 0% |
@@ -153,7 +153,7 @@
 | 8. Sharing | 0 | 1 | 0% |
 | 9. Backend Jobs | 0 | 3 | 0% |
 | 10. Polish | 0 | 8 | 0% |
-| **TOTAL** | **1** | **44** | **2%** |
+| **TOTAL** | **2** | **44** | **5%** |
 
 ---
 
@@ -162,7 +162,7 @@
 Core tickets needed for a functional MVP:
 
 - [x] 001 - Project Setup
-- [ ] 002 - Supabase Setup
+- [x] 002 - Supabase Setup
 - [ ] 003 - Database Schema
 - [ ] 004 - TypeScript Types
 - [ ] 005 - Authentication
@@ -187,7 +187,7 @@ Core tickets needed for a functional MVP:
 - [ ] 043 - Post Detail
 - [ ] 044 - Error Handling
 
-**MVP Progress:** 1/25 complete
+**MVP Progress:** 2/25 complete
 
 ---
 
@@ -205,4 +205,5 @@ Core tickets needed for a functional MVP:
 |------|---------|--------|
 | 2026-01-28 | All | Initial tracker created |
 | 2026-01-28 | 001 | Completed - Expo project setup with Zustand, ESLint, Prettier |
+| 2026-01-29 | 002 | Completed - Supabase client, storage buckets, auth configured |
 
