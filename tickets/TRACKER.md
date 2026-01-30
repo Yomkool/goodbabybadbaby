@@ -13,11 +13,11 @@
 | 002 | Supabase Backend Setup | ✅ | Supabase client, storage buckets, auth configured |
 | 003 | Database Schema & Migrations | ✅ | All tables, indexes, RLS, triggers |
 | 004 | TypeScript Types & Interfaces | ✅ | database, models, navigation, api types |
-| 005 | Authentication Flow | ⬜ | |
+| 005 | Authentication Flow | ✅ | Email auth, session persistence, auth store |
 | 006 | Auth Guards & Protected Routing | ⬜ | |
 | 007 | Onboarding - Add First Pet | ⬜ | |
 
-**Phase 1 Progress:** 4/7 complete
+**Phase 1 Progress:** 5/7 complete
 
 ---
 
@@ -134,8 +134,9 @@
 | 042 | Row Level Security Policies | ⬜ | |
 | 043 | Post Detail Modal/Screen | ⬜ | |
 | 044 | Error Handling & Offline Support | ⬜ | |
+| 046 | Auth Production Setup & Email Config | ⬜ | Pre-launch |
 
-**Phase 10 Progress:** 0/8 complete
+**Phase 10 Progress:** 0/9 complete
 
 ---
 
@@ -143,7 +144,7 @@
 
 | Phase | Complete | Total | % |
 |-------|----------|-------|---|
-| 1. Foundation | 4 | 7 | 57% |
+| 1. Foundation | 5 | 7 | 71% |
 | 2. Core Features | 0 | 11 | 0% |
 | 3. Social Features | 0 | 4 | 0% |
 | 4. Competition | 0 | 4 | 0% |
@@ -152,8 +153,8 @@
 | 7. Engagement | 0 | 2 | 0% |
 | 8. Sharing | 0 | 1 | 0% |
 | 9. Backend Jobs | 0 | 3 | 0% |
-| 10. Polish | 0 | 8 | 0% |
-| **TOTAL** | **4** | **44** | **9%** |
+| 10. Polish | 0 | 9 | 0% |
+| **TOTAL** | **5** | **45** | **11%** |
 
 ---
 
@@ -165,7 +166,7 @@ Core tickets needed for a functional MVP:
 - [x] 002 - Supabase Setup
 - [x] 003 - Database Schema
 - [x] 004 - TypeScript Types
-- [ ] 005 - Authentication
+- [x] 005 - Authentication
 - [ ] 006 - Auth Guards
 - [ ] 007 - Onboarding
 - [ ] 008 - Feed UI
@@ -187,7 +188,7 @@ Core tickets needed for a functional MVP:
 - [ ] 043 - Post Detail
 - [ ] 044 - Error Handling
 
-**MVP Progress:** 4/25 complete
+**MVP Progress:** 5/25 complete
 
 ---
 
@@ -208,4 +209,5 @@ Core tickets needed for a functional MVP:
 | 2026-01-29 | 002 | Completed - Supabase client, storage buckets, auth configured |
 | 2026-01-29 | 003 | Completed - All tables, indexes, RLS policies, triggers deployed |
 | 2026-01-29 | 004 | Completed - database, models, navigation, api types + db:types script |
+| 2026-01-29 | 005 | Completed - Auth store, welcome/login/signup/forgot-password screens |
 
