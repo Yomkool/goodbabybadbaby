@@ -14,7 +14,7 @@ This document provides an index of all tickets for the Good Baby, Bad Baby app d
 - **004** - TypeScript Types & Interfaces
 
 ### Authentication & Onboarding
-- **005** - Authentication Flow (Apple, Google, Email)
+- **005** - Authentication Flow (Email)
 - **006** - Auth Guards & Protected Routing
 - **007** - Onboarding - Add First Pet
 
@@ -106,6 +106,7 @@ This document provides an index of all tickets for the Good Baby, Bad Baby app d
 - **042** - Row Level Security Policies
 - **043** - Post Detail Modal/Screen
 - **044** - Error Handling & Offline Support
+- **045** - Social OAuth Setup (Apple & Google Sign-In)
 
 ---
 
@@ -120,14 +121,15 @@ This document provides an index of all tickets for the Good Baby, Bad Baby app d
 6. Essential Polish: 042, 043, 044
 
 ### Post-MVP
-1. Monetization: 030, 031
-2. Full Tags & Badges: 024, 025
-3. Engagement: 028, 041
-4. Discovery: 027
-5. Sharing: 017, 029
-6. Reports & Moderation: 016, 038
-7. Analytics: 037
-8. Media Optimization: 039, 040
+1. Social Auth: 045 (when app store setup complete)
+2. Monetization: 030, 031
+3. Full Tags & Badges: 024, 025
+4. Engagement: 028, 041
+5. Discovery: 027
+6. Sharing: 017, 029
+7. Reports & Moderation: 016, 038
+8. Analytics: 037
+9. Media Optimization: 039, 040
 
 ---
 
@@ -143,5 +145,5 @@ This document provides an index of all tickets for the Good Baby, Bad Baby app d
 | Monetization | 2 |
 | Engagement | 2 |
 | Backend | 3 |
-| Platform/Polish | 10 |
-| **Total** | **43** |
+| Platform/Polish | 11 |
+| **Total** | **44** |

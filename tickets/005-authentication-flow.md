@@ -1,23 +1,20 @@
 # Ticket 005: Authentication Flow
 
 ## Summary
-Implement sign up and login flows with Apple, Google, and Email authentication.
+Implement sign up and login flows with Email authentication. Social OAuth (Apple/Google) will be added later in Ticket 045.
 
 ## Acceptance Criteria
 
 ### UI Screens
 - [ ] Welcome/Splash screen with app branding
 - [ ] Auth screen with options:
-  - [ ] "Continue with Apple" button
-  - [ ] "Continue with Google" button
   - [ ] "Continue with Email" option
+  - [ ] *(Social auth buttons will be added in Ticket 045)*
 - [ ] Email sign up form (email, password, confirm password)
 - [ ] Email login form (email, password)
 - [ ] Forgot password flow
 
 ### Functionality
-- [ ] Apple Sign-In integration using Expo AuthSession
-- [ ] Google Sign-In integration using Expo AuthSession
 - [ ] Email/password authentication via Supabase Auth
 - [ ] Session persistence (stay logged in)
 - [ ] Automatic session refresh
@@ -29,8 +26,6 @@ Implement sign up and login flows with Apple, Google, and Email authentication.
   - `user` - current user or null
   - `session` - current session
   - `isLoading` - auth state loading
-  - `signInWithApple()`
-  - `signInWithGoogle()`
   - `signInWithEmail(email, password)`
   - `signUpWithEmail(email, password)`
   - `signOut()`
@@ -41,9 +36,8 @@ Implement sign up and login flows with Apple, Google, and Email authentication.
 - [ ] Set default display name from auth provider or email
 
 ## Technical Notes
-- Use `expo-auth-session` and `expo-apple-authentication`
-- Handle deep linking for OAuth callbacks
-- Store session securely using Expo SecureStore
+- Store session securely using AsyncStorage (via Supabase client)
+- Social auth (Apple/Google) deferred to Ticket 045 when app store setup is complete
 
 ## Dependencies
 - Ticket 002: Supabase Setup

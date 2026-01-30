@@ -4,18 +4,17 @@
 Set up Supabase project with database schema, authentication providers, and storage buckets.
 
 ## Acceptance Criteria
-- [ ] Create Supabase project
-- [ ] Configure authentication providers:
-  - [ ] Apple Sign-In
-  - [ ] Google Sign-In
-  - [ ] Email/Password
-- [ ] Create storage buckets:
-  - [ ] `avatars` - for user/pet avatars
-  - [ ] `posts` - for post media (images/videos)
-- [ ] Configure storage policies (authenticated users can upload, public read)
-- [ ] Install Supabase client in React Native app
-- [ ] Create typed client with environment variables
-- [ ] Set up Row Level Security (RLS) policies foundation
+- [x] Create Supabase project
+- [x] Configure authentication providers:
+  - [x] Email/Password (enabled by default)
+  - [ ] *(Social OAuth deferred to Ticket 045)*
+- [x] Create storage buckets:
+  - [x] `avatars` - for user/pet avatars
+  - [x] `posts` - for post media (images/videos)
+- [x] Configure storage policies (authenticated users can upload, public read)
+- [x] Install Supabase client in React Native app
+- [x] Create typed client with environment variables
+- [ ] Set up Row Level Security (RLS) policies foundation *(deferred to Ticket 003/042 - requires tables)*
 
 ## Technical Notes
 - Use `@supabase/supabase-js` v2
