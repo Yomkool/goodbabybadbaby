@@ -8,6 +8,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAuthStore } from '@/stores/authStore';
+import LoadingScreen from '@/components/LoadingScreen';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -46,8 +47,9 @@ export default function RootLayout() {
     }
   }, [loaded, status]);
 
+  // Show loading screen while fonts load or auth state is being determined
   if (!loaded || status === 'loading') {
-    return null;
+    return <LoadingScreen message="Starting up..." />;
   }
 
   return <RootLayoutNav />;
@@ -57,26 +59,40 @@ function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const router = useRouter();
   const segments = useSegments();
-  const { status } = useAuthStore();
+  const { status, hasPets } = useAuthStore();
 
   useEffect(() => {
     // Cast to string since Expo Router types may not be updated yet
     const firstSegment = segments[0] as string;
     const inAuthGroup = firstSegment === '(auth)';
+    const inOnboardingGroup = firstSegment === '(onboarding)';
+    const inTabsGroup = firstSegment === '(tabs)';
 
-    if (status === 'unauthenticated' && !inAuthGroup) {
-      // Redirect to the welcome screen if not authenticated
-      router.replace('/(auth)/welcome' as Href);
-    } else if (status === 'authenticated' && inAuthGroup) {
-      // Redirect to the main app if authenticated
-      router.replace('/(tabs)' as Href);
+    if (status === 'unauthenticated') {
+      // Not logged in -> go to auth screens
+      if (!inAuthGroup) {
+        router.replace('/(auth)/welcome' as Href);
+      }
+    } else if (status === 'authenticated') {
+      if (!hasPets) {
+        // Logged in but no pets -> go to onboarding
+        if (!inOnboardingGroup) {
+          router.replace('/(onboarding)/add-pet' as Href);
+        }
+      } else {
+        // Logged in with pets -> go to main app
+        if (inAuthGroup || inOnboardingGroup) {
+          router.replace('/(tabs)' as Href);
+        }
+      }
     }
-  }, [status, segments, router]);
+  }, [status, hasPets, segments, router]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(onboarding)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>

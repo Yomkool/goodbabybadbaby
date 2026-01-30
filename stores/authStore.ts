@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import type { User } from '@/types';
+import type { User, Pet } from '@/types';
 
 export type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
@@ -12,6 +12,8 @@ interface AuthState {
   session: Session | null;
   supabaseUser: SupabaseUser | null;
   user: User | null;
+  pets: Pet[];
+  hasPets: boolean;
   isLoading: boolean;
   error: string | null;
 
@@ -26,6 +28,8 @@ interface AuthState {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   clearError: () => void;
+  refreshPets: () => Promise<void>;
+  addPet: (pet: Pet) => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -34,6 +38,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   session: null,
   supabaseUser: null,
   user: null,
+  pets: [],
+  hasPets: false,
   isLoading: true,
   error: null,
 
@@ -53,18 +59,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       if (session?.user) {
-        // Fetch user profile
-        const { data: userProfile } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
+        // Fetch user profile and pets
+        const [userResult, petsResult] = await Promise.all([
+          supabase.from('users').select('*').eq('id', session.user.id).single(),
+          supabase.from('pets').select('*').eq('user_id', session.user.id),
+        ]);
+
+        const pets = petsResult.data || [];
 
         set({
           status: 'authenticated',
           session,
           supabaseUser: session.user,
-          user: userProfile,
+          user: userResult.data,
+          pets,
+          hasPets: pets.length > 0,
           isLoading: false,
         });
       } else {
@@ -76,18 +85,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         console.log('Auth state changed:', event);
 
         if (event === 'SIGNED_IN' && session?.user) {
-          // Fetch user profile
-          const { data: userProfile } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+          // Fetch user profile and pets
+          const [userResult, petsResult] = await Promise.all([
+            supabase.from('users').select('*').eq('id', session.user.id).single(),
+            supabase.from('pets').select('*').eq('user_id', session.user.id),
+          ]);
+
+          const pets = petsResult.data || [];
 
           set({
             status: 'authenticated',
             session,
             supabaseUser: session.user,
-            user: userProfile,
+            user: userResult.data,
+            pets,
+            hasPets: pets.length > 0,
             isLoading: false,
           });
         } else if (event === 'SIGNED_OUT') {
@@ -96,6 +108,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             session: null,
             supabaseUser: null,
             user: null,
+            pets: [],
+            hasPets: false,
             isLoading: false,
           });
         } else if (event === 'TOKEN_REFRESHED' && session) {
@@ -190,6 +204,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         session: null,
         supabaseUser: null,
         user: null,
+        pets: [],
+        hasPets: false,
         isLoading: false,
       });
     } catch (err) {
@@ -224,6 +240,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   // Clear error
   clearError: () => set({ error: null }),
+
+  // Refresh pets list
+  refreshPets: async () => {
+    const { supabaseUser } = get();
+    if (!supabaseUser) return;
+
+    const { data: pets } = await supabase
+      .from('pets')
+      .select('*')
+      .eq('user_id', supabaseUser.id);
+
+    const petsList = pets || [];
+    set({ pets: petsList, hasPets: petsList.length > 0 });
+  },
+
+  // Add a pet to the local state (called after creating a pet)
+  addPet: (pet: Pet) => {
+    const { pets } = get();
+    set({ pets: [...pets, pet], hasPets: true });
+  },
 }));
 
 // Helper function to convert Supabase errors to user-friendly messages

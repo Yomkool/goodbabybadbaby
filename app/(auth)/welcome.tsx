@@ -1,10 +1,13 @@
-import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
+import { useState } from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Link, router, Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
+import LegalModal from '@/components/LegalModal';
 
 export default function WelcomeScreen() {
   const insets = useSafeAreaInsets();
+  const [legalModal, setLegalModal] = useState<'terms' | 'privacy' | null>(null);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -72,9 +75,23 @@ export default function WelcomeScreen() {
       </View>
 
       {/* Terms */}
-      <Text style={styles.termsText}>
-        By continuing, you agree to our Terms of Service and Privacy Policy
-      </Text>
+      <View style={styles.termsContainer}>
+        <Text style={styles.termsText}>By continuing, you agree to our </Text>
+        <Pressable onPress={() => setLegalModal('terms')}>
+          <Text style={styles.termsLink}>Terms of Service</Text>
+        </Pressable>
+        <Text style={styles.termsText}> and </Text>
+        <Pressable onPress={() => setLegalModal('privacy')}>
+          <Text style={styles.termsLink}>Privacy Policy</Text>
+        </Pressable>
+      </View>
+
+      {/* Legal Modal */}
+      <LegalModal
+        visible={legalModal !== null}
+        type={legalModal || 'terms'}
+        onClose={() => setLegalModal(null)}
+      />
     </View>
   );
 }
@@ -184,10 +201,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#4CAF50',
   },
+  termsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingBottom: 16,
+  },
   termsText: {
     fontSize: 12,
     color: '#999',
-    textAlign: 'center',
-    paddingBottom: 16,
+  },
+  termsLink: {
+    fontSize: 12,
+    color: '#4CAF50',
+    fontWeight: '500',
   },
 });
