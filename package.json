@@ -11,7 +11,8 @@
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json}\"",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:types": "npx supabase gen types typescript --project-id hifdxgxkymfsarayfnfj > types/database.generated.ts"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

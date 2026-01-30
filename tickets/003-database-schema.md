@@ -7,7 +7,7 @@ Create all database tables, indexes, and relationships in Supabase.
 
 ### Tables to Create
 
-- [ ] **users**
+- [x] **users**
   ```sql
   id: uuid (PK, references auth.users)
   display_name: text
@@ -22,7 +22,7 @@ Create all database tables, indexes, and relationships in Supabase.
   premium_pin_slots: integer (default 9)
   ```
 
-- [ ] **pets**
+- [x] **pets**
   ```sql
   id: uuid (PK)
   user_id: uuid (FK -> users)
@@ -37,7 +37,7 @@ Create all database tables, indexes, and relationships in Supabase.
   pinned_post_ids: text[] (nullable, premium only)
   ```
 
-- [ ] **posts**
+- [x] **posts**
   ```sql
   id: uuid (PK)
   user_id: uuid (FK -> users)
@@ -57,7 +57,7 @@ Create all database tables, indexes, and relationships in Supabase.
   hot_score: float (default 0)
   ```
 
-- [ ] **likes**
+- [x] **likes**
   ```sql
   id: uuid (PK)
   post_id: uuid (FK -> posts)
@@ -66,7 +66,7 @@ Create all database tables, indexes, and relationships in Supabase.
   UNIQUE(post_id, user_id)
   ```
 
-- [ ] **follows**
+- [x] **follows**
   ```sql
   id: uuid (PK)
   pet_id: uuid (FK -> pets)
@@ -75,7 +75,7 @@ Create all database tables, indexes, and relationships in Supabase.
   UNIQUE(pet_id, user_id)
   ```
 
-- [ ] **tag_suggestions**
+- [x] **tag_suggestions**
   ```sql
   id: uuid (PK)
   user_id: uuid (FK -> users)
@@ -85,7 +85,7 @@ Create all database tables, indexes, and relationships in Supabase.
   reviewed_at: timestamptz (nullable)
   ```
 
-- [ ] **curated_tags**
+- [x] **curated_tags**
   ```sql
   id: uuid (PK)
   tag: text (unique)
@@ -94,19 +94,19 @@ Create all database tables, indexes, and relationships in Supabase.
   ```
 
 ### Indexes
-- [ ] posts(created_at DESC)
-- [ ] posts(expires_at) for cleanup queries
-- [ ] posts(hot_score DESC) for feed
-- [ ] posts(pet_id, created_at DESC)
-- [ ] posts(type, hot_score DESC) for filtered feeds
-- [ ] likes(post_id)
-- [ ] likes(user_id)
-- [ ] follows(pet_id)
-- [ ] follows(user_id)
+- [x] posts(created_at DESC)
+- [x] posts(expires_at) for cleanup queries
+- [x] posts(hot_score DESC) for feed
+- [x] posts(pet_id, created_at DESC)
+- [x] posts(type, hot_score DESC) for filtered feeds
+- [x] likes(post_id)
+- [x] likes(user_id)
+- [x] follows(pet_id)
+- [x] follows(user_id)
 
 ### Row Level Security
-- [ ] Enable RLS on all tables
-- [ ] Create basic policies (will be refined per-feature)
+- [x] Enable RLS on all tables
+- [x] Create basic policies (will be refined per-feature)
 
 ## Technical Notes
 - Use Supabase migrations for version control
@@ -117,3 +117,10 @@ Create all database tables, indexes, and relationships in Supabase.
 
 ## Estimated Scope
 Large
+
+## Completion Notes
+- Migration file: `supabase/migrations/20250129_001_initial_schema.sql`
+- TypeScript types updated: `types/database.ts`
+- Added triggers for automatic like/follower count maintenance
+- Added trigger for auto-creating user profile on auth signup
+- Added additional indexes for pets(user_id), posts(user_id), tag_suggestions(status), curated_tags(category)

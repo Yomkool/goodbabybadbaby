@@ -11,13 +11,13 @@
 |---|--------|--------|-------|
 | 001 | Project Setup & Infrastructure | ✅ | Expo 54, Zustand, ESLint/Prettier |
 | 002 | Supabase Backend Setup | ✅ | Supabase client, storage buckets, auth configured |
-| 003 | Database Schema & Migrations | ⬜ | |
-| 004 | TypeScript Types & Interfaces | ⬜ | |
+| 003 | Database Schema & Migrations | ✅ | All tables, indexes, RLS, triggers |
+| 004 | TypeScript Types & Interfaces | ✅ | database, models, navigation, api types |
 | 005 | Authentication Flow | ⬜ | |
 | 006 | Auth Guards & Protected Routing | ⬜ | |
 | 007 | Onboarding - Add First Pet | ⬜ | |
 
-**Phase 1 Progress:** 2/7 complete
+**Phase 1 Progress:** 4/7 complete
 
 ---
 
@@ -143,7 +143,7 @@
 
 | Phase | Complete | Total | % |
 |-------|----------|-------|---|
-| 1. Foundation | 2 | 7 | 29% |
+| 1. Foundation | 4 | 7 | 57% |
 | 2. Core Features | 0 | 11 | 0% |
 | 3. Social Features | 0 | 4 | 0% |
 | 4. Competition | 0 | 4 | 0% |
@@ -153,7 +153,7 @@
 | 8. Sharing | 0 | 1 | 0% |
 | 9. Backend Jobs | 0 | 3 | 0% |
 | 10. Polish | 0 | 8 | 0% |
-| **TOTAL** | **2** | **44** | **5%** |
+| **TOTAL** | **4** | **44** | **9%** |
 
 ---
 
@@ -163,8 +163,8 @@ Core tickets needed for a functional MVP:
 
 - [x] 001 - Project Setup
 - [x] 002 - Supabase Setup
-- [ ] 003 - Database Schema
-- [ ] 004 - TypeScript Types
+- [x] 003 - Database Schema
+- [x] 004 - TypeScript Types
 - [ ] 005 - Authentication
 - [ ] 006 - Auth Guards
 - [ ] 007 - Onboarding
@@ -187,7 +187,7 @@ Core tickets needed for a functional MVP:
 - [ ] 043 - Post Detail
 - [ ] 044 - Error Handling
 
-**MVP Progress:** 2/25 complete
+**MVP Progress:** 4/25 complete
 
 ---
 
@@ -206,4 +206,6 @@ Core tickets needed for a functional MVP:
 | 2026-01-28 | All | Initial tracker created |
 | 2026-01-28 | 001 | Completed - Expo project setup with Zustand, ESLint, Prettier |
 | 2026-01-29 | 002 | Completed - Supabase client, storage buckets, auth configured |
+| 2026-01-29 | 003 | Completed - All tables, indexes, RLS policies, triggers deployed |
+| 2026-01-29 | 004 | Completed - database, models, navigation, api types + db:types script |
 
