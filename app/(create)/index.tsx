@@ -92,10 +92,10 @@ export default function MediaPickerScreen() {
     }
   };
 
-  const takePhoto = async () => {
+  const launchCamera = async (forVideo: boolean) => {
     try {
-      const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      if (status !== 'granted') {
+      const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+      if (cameraStatus !== 'granted') {
         Alert.alert(
           'Permission Required',
           'Please allow camera access to take a photo or video.'
@@ -103,10 +103,13 @@ export default function MediaPickerScreen() {
         return;
       }
 
+      // Note: Microphone permission is handled by the system camera when recording video
+      // The app.json has RECORD_AUDIO permission configured for Android
+
       setIsLoading(true);
 
       const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ['images', 'videos'],
+        mediaTypes: forVideo ? ['videos'] : ['images'],
         allowsEditing: false,
         quality: 1,
         videoMaxDuration: MAX_VIDEO_DURATION,
@@ -124,11 +127,14 @@ export default function MediaPickerScreen() {
         router.push('/(create)/editor' as Href);
       }
     } catch (err) {
-      console.error('Error taking photo:', err);
+      console.error('Error capturing media:', err);
       setIsLoading(false);
       Alert.alert('Error', 'Failed to capture media. Please try again.');
     }
   };
+
+  const takePhoto = () => launchCamera(false);
+  const recordVideo = () => launchCamera(true);
 
   const handleCancel = () => {
     reset();
@@ -173,8 +179,33 @@ export default function MediaPickerScreen() {
                   <FontAwesome name="camera" size={24} color="#4CAF50" />
                 </View>
                 <View style={styles.optionTextContainer}>
-                  <Text style={styles.optionTitle}>Take Photo or Video</Text>
-                  <Text style={styles.optionSubtitle}>Use your camera</Text>
+                  <Text style={styles.optionTitle}>Take Photo</Text>
+                  <Text style={styles.optionSubtitle}>Capture a moment</Text>
+                </View>
+                <FontAwesome name="chevron-right" size={16} color="#ccc" />
+              </>
+            )}
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.optionButton,
+              pressed && styles.optionButtonPressed,
+              isLoading && styles.optionButtonDisabled,
+            ]}
+            onPress={recordVideo}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#4CAF50" />
+            ) : (
+              <>
+                <View style={styles.optionIcon}>
+                  <FontAwesome name="video-camera" size={24} color="#4CAF50" />
+                </View>
+                <View style={styles.optionTextContainer}>
+                  <Text style={styles.optionTitle}>Record Video</Text>
+                  <Text style={styles.optionSubtitle}>Up to {MAX_VIDEO_DURATION} seconds</Text>
                 </View>
                 <FontAwesome name="chevron-right" size={16} color="#ccc" />
               </>

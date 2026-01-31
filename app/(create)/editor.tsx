@@ -12,7 +12,7 @@ import {
 import { router, Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
-import { Video, ResizeMode } from 'expo-av';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useCreatePostStore, AspectRatio } from '@/stores';
 
@@ -38,6 +38,13 @@ export default function MediaEditorScreen() {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [previewUri, setPreviewUri] = useState<string | null>(null);
+
+  // Video player for video preview
+  const videoSource = mediaType === 'video' ? (previewUri || mediaUri) : null;
+  const player = useVideoPlayer(videoSource, (player) => {
+    player.loop = true;
+    player.play();
+  });
 
   useEffect(() => {
     if (!mediaUri) {
@@ -181,22 +188,20 @@ export default function MediaEditorScreen() {
               <ActivityIndicator size="large" color="#fff" />
             </View>
           )}
-          {mediaType === 'video' ? (
-            <Video
-              source={{ uri: previewUri || mediaUri }}
+          {mediaType === 'video' && player ? (
+            <VideoView
+              player={player}
               style={styles.preview}
-              resizeMode={ResizeMode.COVER}
-              shouldPlay
-              isLooping
-              isMuted
+              contentFit="cover"
+              nativeControls
             />
-          ) : (
+          ) : mediaType === 'image' ? (
             <Image
               source={{ uri: previewUri || mediaUri }}
               style={styles.preview}
               resizeMode="cover"
             />
-          )}
+          ) : null}
         </View>
       </View>
 

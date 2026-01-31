@@ -31,6 +31,8 @@ export type PostType = 'good' | 'bad';
 
 export type SuggestionStatus = 'pending' | 'approved' | 'rejected';
 
+export type MediaStatus = 'uploading' | 'processing' | 'ready' | 'error';
+
 export interface Database {
   public: {
     Tables: {
@@ -125,15 +127,70 @@ export interface Database {
           }
         ];
       };
+      media: {
+        Row: {
+          id: string;
+          user_id: string;
+          type: MediaType;
+          status: MediaStatus;
+          original_url: string;
+          file_size: number | null;
+          width: number | null;
+          height: number | null;
+          duration: number | null;
+          thumbnail_url: string | null;
+          mux_asset_id: string | null;
+          mux_playback_id: string | null;
+          cdn_url: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          type: MediaType;
+          status?: MediaStatus;
+          original_url: string;
+          file_size?: number | null;
+          width?: number | null;
+          height?: number | null;
+          duration?: number | null;
+          thumbnail_url?: string | null;
+          mux_asset_id?: string | null;
+          mux_playback_id?: string | null;
+          cdn_url?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          type?: MediaType;
+          status?: MediaStatus;
+          original_url?: string;
+          file_size?: number | null;
+          width?: number | null;
+          height?: number | null;
+          duration?: number | null;
+          thumbnail_url?: string | null;
+          mux_asset_id?: string | null;
+          mux_playback_id?: string | null;
+          cdn_url?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'media_user_id_fkey';
+            columns: ['user_id'];
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
       posts: {
         Row: {
           id: string;
           user_id: string;
           pet_id: string;
-          media_type: MediaType;
-          media_url: string;
-          thumbnail_url: string | null;
-          video_duration: number | null;
+          media_id: string;
           type: PostType;
           tags: string[];
           like_count: number;
@@ -148,10 +205,7 @@ export interface Database {
           id?: string;
           user_id: string;
           pet_id: string;
-          media_type: MediaType;
-          media_url: string;
-          thumbnail_url?: string | null;
-          video_duration?: number | null;
+          media_id: string;
           type: PostType;
           tags?: string[];
           like_count?: number;
@@ -166,10 +220,7 @@ export interface Database {
           id?: string;
           user_id?: string;
           pet_id?: string;
-          media_type?: MediaType;
-          media_url?: string;
-          thumbnail_url?: string | null;
-          video_duration?: number | null;
+          media_id?: string;
           type?: PostType;
           tags?: string[];
           like_count?: number;
@@ -191,6 +242,12 @@ export interface Database {
             foreignKeyName: 'posts_pet_id_fkey';
             columns: ['pet_id'];
             referencedRelation: 'pets';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'posts_media_id_fkey';
+            columns: ['media_id'];
+            referencedRelation: 'media';
             referencedColumns: ['id'];
           }
         ];
@@ -328,6 +385,7 @@ export interface Database {
     Enums: {
       species_type: SpeciesType;
       media_type: MediaType;
+      media_status: MediaStatus;
       post_type: PostType;
       suggestion_status: SuggestionStatus;
     };
@@ -345,6 +403,7 @@ export type UpdateTables<T extends keyof Database['public']['Tables']> =
 // Convenience type aliases
 export type User = Tables<'users'>;
 export type Pet = Tables<'pets'>;
+export type Media = Tables<'media'>;
 export type Post = Tables<'posts'>;
 export type Like = Tables<'likes'>;
 export type Follow = Tables<'follows'>;

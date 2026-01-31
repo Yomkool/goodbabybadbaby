@@ -9,7 +9,9 @@
       "Bash(del \"C:\\\\Users\\\\banno\\\\OneDrive\\\\Desktop\\\\goodbabybadbaby\\\\tickets\\\\008-feed-ui.md\" \"C:\\\\Users\\\\banno\\\\OneDrive\\\\Desktop\\\\goodbabybadbaby\\\\tickets\\\\009-feed-data-hot-ranking.md\")",
       "Bash(tree:*)",
       "Bash(ls:*)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(npm run lint)",
+      "Bash(npm uninstall:*)"
     ]
   }
 }

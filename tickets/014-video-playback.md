@@ -29,7 +29,7 @@ Implement video playback with autoplay, muting, and proper lifecycle management.
 - [ ] Handle network interruptions gracefully
 
 ## Technical Notes
-- Use `expo-av` or `expo-video` for playback
+- Use `expo-video` for playback
 - Consider Mux for video hosting/streaming
 - Test on both iOS and Android for behavior consistency
 

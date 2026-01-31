@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,11 +13,21 @@ import {
 import { router, Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FontAwesome } from '@expo/vector-icons';
-import { Video, ResizeMode } from 'expo-av';
-import { File } from 'expo-file-system';
+import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCreatePostStore, useAuthStore } from '@/stores';
 import { supabase } from '@/lib/supabase';
-import type { SpeciesType } from '@/types';
+import {
+  validateMedia,
+  quickCompress,
+  processVideoForUpload,
+  uploadMediaWithRetry,
+  getFileInfo,
+  UploadTask,
+} from '@/lib/media';
+import type { SpeciesType, Database } from '@/types';
+
+type MediaInsert = Database['public']['Tables']['media']['Insert'];
+type PostInsert = Database['public']['Tables']['posts']['Insert'];
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PREVIEW_SIZE = SCREEN_WIDTH - 48;
@@ -55,9 +65,37 @@ export default function PostPreviewScreen() {
     reset,
   } = useCreatePostStore();
 
-  const [uploadProgress, setUploadProgress] = useState<string>('');
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [uploadStatus, setUploadStatus] = useState<string>('');
+  const [videoDuration, setVideoDuration] = useState<number | undefined>();
+  const uploadTaskRef = useRef<UploadTask | null>(null);
 
   const selectedPet = pets.find((p) => p.id === selectedPetId);
+  const displayUri = croppedUri || mediaUri;
+
+  // Video player for video preview
+  const player = useVideoPlayer(
+    mediaType === 'video' ? displayUri : null,
+    (player) => {
+      player.loop = true;
+      player.play();
+    }
+  );
+
+  // Get video duration from player
+  useEffect(() => {
+    if (player && mediaType === 'video') {
+      const checkDuration = () => {
+        if (player.duration && player.duration > 0) {
+          setVideoDuration(player.duration * 1000); // Convert to milliseconds
+        }
+      };
+      // Check immediately and after a short delay (player may need time to load)
+      checkDuration();
+      const timeout = setTimeout(checkDuration, 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [player, mediaType]);
 
   useEffect(() => {
     if (!mediaUri || !selectedPetId || !postType) {
@@ -65,69 +103,125 @@ export default function PostPreviewScreen() {
     }
   }, [mediaUri, selectedPetId, postType]);
 
-  const uploadMedia = async (): Promise<string | null> => {
-    const uri = croppedUri || mediaUri;
-    if (!uri || !user) return null;
-
-    try {
-      setUploadProgress('Uploading media...');
-
-      const file = new File(uri);
-      const arrayBuffer = await file.arrayBuffer();
-
-      const extension = mediaType === 'video' ? 'mp4' : 'jpg';
-      const contentType = mediaType === 'video' ? 'video/mp4' : 'image/jpeg';
-      const fileName = `${user.id}/${Date.now()}.${extension}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('posts')
-        .upload(fileName, arrayBuffer, {
-          contentType,
-          upsert: false,
-        });
-
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        return null;
-      }
-
-      const { data: urlData } = supabase.storage.from('posts').getPublicUrl(fileName);
-      return urlData.publicUrl;
-    } catch (err) {
-      console.error('Error uploading media:', err);
-      return null;
-    }
-  };
-
   const createPost = async () => {
     if (!user || !selectedPetId || !postType) {
       setError('Missing required information');
       return;
     }
 
+    const uri = croppedUri || mediaUri;
+    if (!uri || !mediaType) {
+      setError('No media selected');
+      return;
+    }
+
     setIsUploading(true);
     setError(null);
+    setUploadProgress(0);
 
     try {
-      // Upload media
-      const mediaUrl = await uploadMedia();
-      if (!mediaUrl) {
-        setError('Failed to upload media. Please try again.');
+      // Step 1: Validate media
+      setUploadStatus('Validating...');
+      const validation = await validateMedia(
+        uri,
+        mediaType,
+        videoDuration ? videoDuration / 1000 : undefined
+      );
+      if (!validation.valid) {
+        setError(validation.error || 'Invalid media');
+        setIsUploading(false);
+        return;
+      }
+      setUploadProgress(10);
+
+      // Step 2: Process media (compress image or generate video thumbnail)
+      let processedUri = uri;
+      let thumbnailUrl: string | undefined;
+      let fileSize: number | undefined;
+
+      if (mediaType === 'image') {
+        setUploadStatus('Compressing image...');
+        const compressed = await quickCompress(uri, 0.8);
+        processedUri = compressed.uri;
+        // Get compressed file size
+        const fileInfo = await getFileInfo(processedUri);
+        fileSize = fileInfo?.size;
+        setUploadProgress(30);
+      } else if (mediaType === 'video') {
+        setUploadStatus('Generating thumbnail...');
+        const videoResult = await processVideoForUpload(uri, videoDuration);
+
+        // Get video file size (from original, since we don't compress video yet)
+        const fileInfo = await getFileInfo(uri);
+        fileSize = fileInfo?.size;
+
+        // Upload thumbnail first
+        setUploadStatus('Uploading thumbnail...');
+        const thumbUpload = await uploadMediaWithRetry(
+          videoResult.thumbnailUri,
+          user.id,
+          'image',
+          {
+            bucket: 'posts',
+            folder: 'thumbnails',
+            onProgress: (p) => setUploadProgress(30 + p * 0.15),
+          }
+        );
+        thumbnailUrl = thumbUpload.publicUrl;
+        setUploadProgress(45);
+      }
+
+      // Step 3: Upload main media
+      setUploadStatus('Uploading media...');
+      const uploadResult = await uploadMediaWithRetry(
+        processedUri,
+        user.id,
+        mediaType,
+        {
+          bucket: 'posts',
+          onProgress: (p) => setUploadProgress(45 + p * 0.45),
+        }
+      );
+      setUploadProgress(90);
+
+      // Step 4: Create media record
+      setUploadStatus('Saving media...');
+      const mediaData: MediaInsert = {
+        user_id: user.id,
+        type: mediaType,
+        original_url: uploadResult.publicUrl,
+        file_size: fileSize,
+        thumbnail_url: mediaType === 'video' ? thumbnailUrl : undefined,
+        duration:
+          mediaType === 'video' && videoDuration
+            ? Math.round(videoDuration / 1000)
+            : undefined,
+      };
+
+      const { data: mediaRecord, error: mediaError } = await supabase
+        .from('media')
+        .insert(mediaData)
+        .select('id')
+        .single();
+
+      if (mediaError || !mediaRecord) {
+        console.error('Media insert error:', mediaError);
+        setError('Failed to save media. Please try again.');
         setIsUploading(false);
         return;
       }
 
-      setUploadProgress('Creating post...');
-
-      // Create post record
-      const { error: insertError } = await supabase.from('posts').insert({
+      // Step 5: Create post record
+      setUploadStatus('Creating post...');
+      const postData: PostInsert = {
         user_id: user.id,
         pet_id: selectedPetId,
-        media_type: mediaType || 'image',
-        media_url: mediaUrl,
+        media_id: mediaRecord.id,
         type: postType,
         tags: selectedTags,
-      });
+      };
+
+      const { error: insertError } = await supabase.from('posts').insert(postData);
 
       if (insertError) {
         console.error('Insert error:', insertError);
@@ -135,6 +229,8 @@ export default function PostPreviewScreen() {
         setIsUploading(false);
         return;
       }
+
+      setUploadProgress(100);
 
       // Success!
       setIsUploading(false);
@@ -148,9 +244,20 @@ export default function PostPreviewScreen() {
       ]);
     } catch (err) {
       console.error('Error creating post:', err);
-      setError('An unexpected error occurred. Please try again.');
+      const errorMessage =
+        err instanceof Error ? err.message : 'An unexpected error occurred';
+      setError(errorMessage === 'Upload cancelled' ? 'Upload cancelled' : errorMessage);
       setIsUploading(false);
     }
+  };
+
+  const cancelUpload = () => {
+    if (uploadTaskRef.current) {
+      uploadTaskRef.current.cancel();
+      uploadTaskRef.current = null;
+    }
+    setIsUploading(false);
+    setError('Upload cancelled');
   };
 
   const handlePost = () => {
@@ -159,8 +266,6 @@ export default function PostPreviewScreen() {
       { text: 'Share', onPress: createPost },
     ]);
   };
-
-  const displayUri = croppedUri || mediaUri;
 
   if (!displayUri || !selectedPet || !postType) {
     return (
@@ -180,23 +285,20 @@ export default function PostPreviewScreen() {
       >
         {/* Media Preview */}
         <View style={styles.mediaContainer}>
-          {mediaType === 'video' ? (
-            <Video
-              source={{ uri: displayUri }}
+          {mediaType === 'video' && player ? (
+            <VideoView
+              player={player}
               style={styles.media}
-              resizeMode={ResizeMode.COVER}
-              shouldPlay
-              isLooping
-              isMuted={false}
-              useNativeControls
+              contentFit="cover"
+              nativeControls
             />
-          ) : (
+          ) : mediaType === 'image' ? (
             <Image
               source={{ uri: displayUri }}
               style={styles.media}
               resizeMode="cover"
             />
-          )}
+          ) : null}
         </View>
 
         {/* Post Info */}
@@ -281,8 +383,27 @@ export default function PostPreviewScreen() {
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16 }]}>
         {isUploading ? (
           <View style={styles.uploadingContainer}>
-            <ActivityIndicator size="small" color="#4CAF50" />
-            <Text style={styles.uploadingText}>{uploadProgress}</Text>
+            <View style={styles.progressSection}>
+              <View style={styles.progressHeader}>
+                <ActivityIndicator size="small" color="#4CAF50" />
+                <Text style={styles.uploadingText}>{uploadStatus}</Text>
+                <Text style={styles.progressPercent}>{Math.round(uploadProgress)}%</Text>
+              </View>
+              <View style={styles.progressBarContainer}>
+                <View
+                  style={[styles.progressBar, { width: `${uploadProgress}%` }]}
+                />
+              </View>
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.cancelButton,
+                pressed && styles.cancelButtonPressed,
+              ]}
+              onPress={cancelUpload}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </Pressable>
           </View>
         ) : (
           <Pressable
@@ -440,15 +561,51 @@ const styles = StyleSheet.create({
     borderTopColor: '#eee',
   },
   uploadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
     gap: 12,
   },
+  progressSection: {
+    gap: 8,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   uploadingText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#666',
+    flex: 1,
+  },
+  progressPercent: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#4CAF50',
+  },
+  progressBarContainer: {
+    height: 6,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  progressBar: {
+    height: '100%',
+    backgroundColor: '#4CAF50',
+    borderRadius: 3,
+  },
+  cancelButton: {
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  cancelButtonPressed: {
+    backgroundColor: '#f5f5f5',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
   },
   postButton: {
     backgroundColor: '#4CAF50',
