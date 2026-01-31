@@ -1,4 +1,5 @@
 // Feed Store - Zustand store for feed state management
+// Implements Ticket 011: Feed Data & Hot Ranking Algorithm
 import { create } from 'zustand';
 import { supabase } from '@/lib/supabase';
 import type {
@@ -14,6 +15,7 @@ import type { Media } from '@/types/database';
 
 export interface FeedPost extends PostWithRelations {
   media: Media;
+  isFollowedByCurrentUser?: boolean;
 }
 
 interface FeedState {
@@ -34,6 +36,7 @@ interface FeedState {
   setFilter: (filter: FeedFilter) => void;
   setFeedType: (type: FeedType) => void;
   setSpeciesFilter: (species: SpeciesType | undefined) => void;
+  toggleFollowingOnly: () => void;
   toggleLike: (postId: string) => Promise<void>;
   clearError: () => void;
 }
@@ -161,6 +164,19 @@ export const useFeedStore = create<FeedState>((set, get) => ({
     get().fetchFeed();
   },
 
+  // Toggle following only (convenience method)
+  toggleFollowingOnly: () => {
+    const { filters } = get();
+    const newType = filters.type === 'following' ? 'hot' : 'following';
+    set((state) => ({
+      filters: { ...state.filters, type: newType },
+      posts: [],
+      cursor: null,
+      hasMore: true,
+    }));
+    get().fetchFeed();
+  },
+
   // Toggle like on a post
   toggleLike: async (postId: string) => {
     const { posts } = get();
@@ -228,6 +244,46 @@ async function fetchFeedData(
 ): Promise<{ posts: FeedPost[]; cursor: string | null; hasMore: boolean }> {
   const { data: { user } } = await supabase.auth.getUser();
 
+  // Get user's followed pets for following filter and hot score boost
+  let followedPetIds: string[] = [];
+  // Get user's liked posts to exclude from hot feed (show fresh content)
+  let likedPostIds: string[] = [];
+
+  if (user) {
+    // Fetch follows and likes in parallel
+    const [followsResult, likesResult] = await Promise.all([
+      supabase.from('follows').select('pet_id').eq('user_id', user.id),
+      // Only fetch liked posts for hot feed (to exclude them)
+      filters.type === 'hot'
+        ? supabase.from('likes').select('post_id').eq('user_id', user.id)
+        : Promise.resolve({ data: null }),
+    ]);
+
+    followedPetIds = followsResult.data?.map((f) => f.pet_id) || [];
+    likedPostIds = likesResult.data?.map((l) => l.post_id) || [];
+  }
+
+  // For following feed with no follows, return empty immediately
+  if (filters.type === 'following' && followedPetIds.length === 0) {
+    return { posts: [], cursor: null, hasMore: false };
+  }
+
+  // If species filter is set, get pet IDs with that species first
+  // (Supabase doesn't support filtering on joined table fields directly)
+  let speciesFilteredPetIds: string[] | null = null;
+  if (filters.species) {
+    const { data: petsWithSpecies } = await supabase
+      .from('pets')
+      .select('id')
+      .eq('species', filters.species);
+    speciesFilteredPetIds = petsWithSpecies?.map((p) => p.id) || [];
+
+    // No pets with this species, return empty
+    if (speciesFilteredPetIds.length === 0) {
+      return { posts: [], cursor: null, hasMore: false };
+    }
+  }
+
   // Build the query
   let query = supabase
     .from('posts')
@@ -237,16 +293,28 @@ async function fetchFeedData(
       pet:pets!posts_pet_id_fkey(*),
       media:media!posts_media_id_fkey(*)
     `)
+    .gt('expires_at', new Date().toISOString()) // Filter out expired posts
     .limit(limit + 1); // Fetch one extra to check if there are more
+
+  // For hot feed, exclude posts the user has already liked (show fresh content)
+  if (filters.type === 'hot' && likedPostIds.length > 0) {
+    // Supabase uses PostgREST's "not in" syntax
+    query = query.not('id', 'in', `(${likedPostIds.join(',')})`);
+  }
 
   // Apply post type filter (good/bad)
   if (filters.filter !== 'all') {
     query = query.eq('type', filters.filter);
   }
 
-  // Apply species filter
-  if (filters.species) {
-    query = query.eq('pet.species', filters.species);
+  // Apply species filter (using pre-fetched pet IDs)
+  if (speciesFilteredPetIds) {
+    query = query.in('pet_id', speciesFilteredPetIds);
+  }
+
+  // Apply following filter
+  if (filters.type === 'following') {
+    query = query.in('pet_id', followedPetIds);
   }
 
   // Apply ordering based on feed type
@@ -255,35 +323,17 @@ async function fetchFeedData(
       query = query.order('hot_score', { ascending: false });
       break;
     case 'new':
-      query = query.order('created_at', { ascending: false });
-      break;
     case 'following':
-      // For following feed, we need to filter by followed pets
-      if (user) {
-        const { data: follows } = await supabase
-          .from('follows')
-          .select('pet_id')
-          .eq('user_id', user.id);
-
-        const followedPetIds = follows?.map((f) => f.pet_id) || [];
-        if (followedPetIds.length > 0) {
-          query = query.in('pet_id', followedPetIds);
-        } else {
-          // No followed pets, return empty
-          return { posts: [], cursor: null, hasMore: false };
-        }
-      }
       query = query.order('created_at', { ascending: false });
       break;
   }
 
   // Apply cursor-based pagination
   if (cursor) {
-    const cursorDate = new Date(cursor).toISOString();
     if (filters.type === 'hot') {
       query = query.lt('hot_score', parseFloat(cursor));
     } else {
-      query = query.lt('created_at', cursorDate);
+      query = query.lt('created_at', cursor);
     }
   }
 
@@ -306,25 +356,37 @@ async function fetchFeedData(
       : lastPost.created_at;
   }
 
-  // Check which posts the current user has liked
-  let likedPostIds: Set<string> = new Set();
-  if (user && posts.length > 0) {
-    const { data: likes } = await supabase
-      .from('likes')
-      .select('post_id')
-      .eq('user_id', user.id)
-      .in('post_id', posts.map((p) => p.id));
-
-    likedPostIds = new Set(likes?.map((l) => l.post_id) || []);
+  // For hot feed, we already excluded liked posts, so isLikedByCurrentUser is always false
+  // For new/following feeds, we need to check which posts are liked
+  let likedPostIdSet: Set<string>;
+  if (filters.type === 'hot') {
+    // Hot feed excludes liked posts, so none of these are liked
+    likedPostIdSet = new Set();
+  } else {
+    // For new/following, fetch likes for the returned posts
+    if (user && posts.length > 0) {
+      const { data: likes } = await supabase
+        .from('likes')
+        .select('post_id')
+        .eq('user_id', user.id)
+        .in('post_id', posts.map((p) => p.id));
+      likedPostIdSet = new Set(likes?.map((l) => l.post_id) || []);
+    } else {
+      likedPostIdSet = new Set();
+    }
   }
 
-  // Transform posts with relations and like status
+  // Create set for quick follow lookup
+  const followedPetIdSet = new Set(followedPetIds);
+
+  // Transform posts with relations, like status, and follow status
   const transformedPosts: FeedPost[] = posts.map((post) => ({
     ...post,
     user: post.user as User,
     pet: post.pet as Pet,
     media: post.media as Media,
-    isLikedByCurrentUser: likedPostIds.has(post.id),
+    isLikedByCurrentUser: likedPostIdSet.has(post.id),
+    isFollowedByCurrentUser: followedPetIdSet.has(post.pet_id),
   }));
 
   return {
@@ -332,4 +394,64 @@ async function fetchFeedData(
     cursor: nextCursor,
     hasMore,
   };
+}
+
+/**
+ * Hot Score Calculation
+ * ====================
+ * Formula: score = (likes × followed_boost) / (hours_since_post + 2)^1.5
+ * Where followed_boost = 1.5 if user follows pet, else 1.0
+ *
+ * This should be implemented as a Supabase function for production use.
+ * The function below calculates the base score (without user-specific boost).
+ *
+ * SQL for Supabase (to be run in Supabase SQL editor):
+ *
+ * -- Function to calculate hot score (base, without user-specific boost)
+ * CREATE OR REPLACE FUNCTION calculate_hot_score(
+ *   p_like_count INTEGER,
+ *   p_created_at TIMESTAMPTZ
+ * ) RETURNS NUMERIC AS $$
+ * DECLARE
+ *   hours_since_post NUMERIC;
+ * BEGIN
+ *   hours_since_post := EXTRACT(EPOCH FROM (NOW() - p_created_at)) / 3600;
+ *   RETURN p_like_count / POWER(hours_since_post + 2, 1.5);
+ * END;
+ * $$ LANGUAGE plpgsql IMMUTABLE;
+ *
+ * -- Trigger to update hot_score on post insert/update
+ * CREATE OR REPLACE FUNCTION update_post_hot_score()
+ * RETURNS TRIGGER AS $$
+ * BEGIN
+ *   NEW.hot_score := calculate_hot_score(NEW.like_count, NEW.created_at);
+ *   RETURN NEW;
+ * END;
+ * $$ LANGUAGE plpgsql;
+ *
+ * CREATE TRIGGER posts_hot_score_trigger
+ *   BEFORE INSERT OR UPDATE OF like_count ON posts
+ *   FOR EACH ROW
+ *   EXECUTE FUNCTION update_post_hot_score();
+ *
+ * -- Periodic update for time decay (run via cron job - see Ticket 032)
+ * -- UPDATE posts SET hot_score = calculate_hot_score(like_count, created_at);
+ */
+export function calculateHotScore(likeCount: number, createdAt: Date | string): number {
+  const createdDate = typeof createdAt === 'string' ? new Date(createdAt) : createdAt;
+  const hoursSincePost = (Date.now() - createdDate.getTime()) / (1000 * 60 * 60);
+  return likeCount / Math.pow(hoursSincePost + 2, 1.5);
+}
+
+/**
+ * Calculate hot score with followed boost for personalized ranking
+ */
+export function calculatePersonalizedHotScore(
+  likeCount: number,
+  createdAt: Date | string,
+  isFollowed: boolean
+): number {
+  const baseScore = calculateHotScore(likeCount, createdAt);
+  const followedBoost = isFollowed ? 1.5 : 1.0;
+  return baseScore * followedBoost;
 }

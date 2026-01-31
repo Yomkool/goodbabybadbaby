@@ -47,6 +47,9 @@ goodbabybadbaby/
 │   └── Colors.ts               # Theme colors
 ├── hooks/                      # Custom React hooks (planned)
 ├── assets/                     # Images, fonts, icons
+├── supabase/                   # Supabase configuration
+│   └── migrations/             # SQL migrations for database functions
+│       └── 003_hot_ranking.sql # Hot score calculation & triggers
 └── organization/               # Project documentation
     ├── architecture.md         # This file
     ├── TRACKER.md              # Development progress tracker
@@ -182,7 +185,7 @@ Auto-generated from Supabase schema. Key types:
 ### Model Types (`types/models.ts`)
 App-level abstractions:
 - `PostWithRelations` - Post with pet, user, media joined
-- `FeedPost` - PostWithRelations + `isLikedByCurrentUser`
+- `FeedPost` - PostWithRelations + `isLikedByCurrentUser` + `isFollowedByCurrentUser`
 - `FeedType`, `FeedFilter`, `FeedFilters`
 - `Badge`, `BadgeType`, `UserBadges`
 - `LeaderboardCategory`, `LeaderboardPeriod`, `LeaderboardEntry`
@@ -248,6 +251,27 @@ Store transforms to app types
     ↓ state update
 UI re-renders
 ```
+
+### Hot Ranking Algorithm
+Posts are ranked using a hot score algorithm:
+```
+score = likes / (hours_since_post + 2)^1.5
+```
+- The `+2` prevents brand new posts from having infinite scores
+- The `^1.5` exponent provides moderate time decay
+- For personalized feeds, followed pets get a 1.5x boost
+
+**Database Functions** (`supabase/migrations/003_hot_ranking.sql`):
+- `calculate_hot_score(likes, created_at)` - Calculates base score
+- `update_post_hot_score()` - Trigger function for auto-updates
+- `recalculate_all_hot_scores()` - For cron job time decay
+- `get_personalized_feed(...)` - RPC for personalized ranking with followed boost
+
+**Feed Queries** (`stores/feedStore.ts`):
+- Filters expired posts (`expires_at > now`)
+- Species filter via pre-fetched pet IDs (Supabase limitation workaround)
+- Cursor-based pagination using `hot_score` or `created_at`
+- Batch fetches user's likes and follows for UI state
 
 ---
 
