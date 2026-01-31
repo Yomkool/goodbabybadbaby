@@ -43,6 +43,10 @@ interface FeedState {
 
 const FEED_PAGE_SIZE = 10;
 
+// Track pending like operations to prevent spam
+const likePendingMap = new Map<string, number>();
+const LIKE_DEBOUNCE_MS = 500;
+
 export const useFeedStore = create<FeedState>((set, get) => ({
   // Initial state
   posts: [],
@@ -183,10 +187,23 @@ export const useFeedStore = create<FeedState>((set, get) => ({
     const post = posts.find((p) => p.id === postId);
     if (!post) return;
 
+    // Debounce: prevent rapid like/unlike spam
+    const now = Date.now();
+    const lastLikeTime = likePendingMap.get(postId);
+    if (lastLikeTime && now - lastLikeTime < LIKE_DEBOUNCE_MS) {
+      return; // Ignore rapid repeated taps
+    }
+    likePendingMap.set(postId, now);
+
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      likePendingMap.delete(postId);
+      return;
+    }
 
     const isCurrentlyLiked = post.isLikedByCurrentUser;
+    const postOwnerId = post.user_id;
+    const postPetId = post.pet_id;
 
     // Optimistic update
     set((state) => ({
@@ -203,18 +220,30 @@ export const useFeedStore = create<FeedState>((set, get) => ({
 
     try {
       if (isCurrentlyLiked) {
-        // Unlike
+        // Unlike: remove like and decrement counters
         await supabase
           .from('likes')
           .delete()
           .eq('post_id', postId)
           .eq('user_id', user.id);
+
+        // Decrement total_likes_received on user and pet (fire and forget)
+        await Promise.all([
+          supabase.rpc('decrement_user_likes', { user_id_param: postOwnerId }),
+          supabase.rpc('decrement_pet_likes', { pet_id_param: postPetId }),
+        ]).catch((err) => console.error('Error decrementing like counters:', err));
       } else {
-        // Like
+        // Like: add like and increment counters
         await supabase.from('likes').insert({
           post_id: postId,
           user_id: user.id,
         });
+
+        // Increment total_likes_received on user and pet (fire and forget)
+        await Promise.all([
+          supabase.rpc('increment_user_likes', { user_id_param: postOwnerId }),
+          supabase.rpc('increment_pet_likes', { pet_id_param: postPetId }),
+        ]).catch((err) => console.error('Error incrementing like counters:', err));
       }
     } catch (err) {
       console.error('Error toggling like:', err);
@@ -230,6 +259,9 @@ export const useFeedStore = create<FeedState>((set, get) => ({
             : p
         ),
       }));
+    } finally {
+      // Clean up pending map after a delay to allow the debounce window
+      setTimeout(() => likePendingMap.delete(postId), LIKE_DEBOUNCE_MS);
     }
   },
 

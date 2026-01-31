@@ -29,15 +29,14 @@
 | 009 | Media Upload & Processing | ✅ | Image compression, video thumbnails, upload with progress |
 | 010 | Feed UI - Vertical Swipe Cards | ✅ | TikTok-style feed, double-tap like, video autoplay |
 | 011 | Feed Data & Hot Ranking Algorithm | ✅ | Hot score, filtering, pagination, Supabase functions |
-| 012 | Post Overlay & Interaction UI | ⬜ | Metadata display, action buttons |
-| 013 | Like Functionality | ⬜ | Paw-print likes, double-tap |
+| 013 | Like Functionality | ✅ | Debounce, optimistic UI, total_likes counters via RPC |
 | 014 | Video Playback in Feed | ⬜ | Autoplay, muting, lifecycle |
 | 015 | Add New Pet During Post Creation | ⬜ | |
 | 016 | Report Functionality | ⬜ | |
 | 017 | Share Functionality | ⬜ | |
 | 018 | Content Lifecycle - Expiration & Pinning | ⬜ | |
 
-**Phase 2 Progress:** 4/11 complete
+**Phase 2 Progress:** 5/10 complete
 
 ---
 
@@ -63,8 +62,9 @@
 | 024 | Tags System | ⬜ | |
 | 025 | Badges System | ⬜ | |
 | 026 | Crown Mechanics & Champion Transitions | ⬜ | |
+| 012 | Post Overlay & Interaction UI | ⬜ | Polish pass - depends on 016, 017, 020, 024 |
 
-**Phase 4 Progress:** 0/4 complete
+**Phase 4 Progress:** 0/5 complete
 
 ---
 
@@ -162,9 +162,9 @@
 | Phase | Complete | Total | % |
 |-------|----------|-------|---|
 | 1. Foundation | 7 | 7 | 100% |
-| 2. Core Features | 4 | 11 | 36% |
+| 2. Core Features | 5 | 10 | 50% |
 | 3. Social Features | 0 | 5 | 0% |
-| 4. Competition | 0 | 4 | 0% |
+| 4. Competition | 0 | 5 | 0% |
 | 5. Discovery | 0 | 2 | 0% |
 | 6. Monetization | 0 | 2 | 0% |
 | 7. Engagement | 0 | 2 | 0% |
@@ -172,7 +172,7 @@
 | 9. Backend Jobs | 0 | 3 | 0% |
 | 10. Pre-Scale Infra | 0 | 4 | 0% |
 | 11. Polish | 0 | 9 | 0% |
-| **TOTAL** | **11** | **50** | **22%** |
+| **TOTAL** | **12** | **50** | **24%** |
 
 ---
 
@@ -192,7 +192,7 @@ Core tickets needed for a functional MVP:
 - [x] 010 - Feed UI
 - [x] 011 - Feed Data
 - [ ] 012 - Post Overlay
-- [ ] 013 - Like Functionality
+- [x] 013 - Like Functionality
 - [ ] 019 - User Profile
 - [ ] 020 - Pet Profile
 - [ ] 021 - Follow System
@@ -206,7 +206,7 @@ Core tickets needed for a functional MVP:
 - [ ] 043 - Post Detail
 - [ ] 044 - Error Handling
 
-**MVP Progress:** 11/25 complete
+**MVP Progress:** 12/25 complete
 
 ---
 
@@ -239,3 +239,5 @@ Core tickets needed for a functional MVP:
 | 2026-01-31 | 011 | Completed - Hot score algorithm, filtering, pagination, Supabase functions, expires_at filter |
 | 2026-01-31 | 051 | In Progress - Added zoom/pan cropping to photo editor |
 | 2026-01-31 | 052 | Added - Auto-set pet avatar from first upload ticket |
+| 2026-01-31 | 012 | Moved to Phase 4 - polish ticket depends on 016, 017, 020, 024 |
+| 2026-01-31 | 013 | Completed - added debounce (500ms), RPC functions for total_likes counters |
