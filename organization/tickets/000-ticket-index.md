@@ -96,17 +96,29 @@ This document provides an index of all tickets for the Good Baby, Bad Baby app d
 
 ---
 
-## Phase 10: Platform & Polish (Tickets 035, 037-044)
+## Phase 10: Pre-Scale Infrastructure (Tickets 039, 040, 047, 049)
+
+- **039** - Image CDN & Optimization
+- **040** - Video Hosting & Streaming (Mux)
+- **047** - Client-Side Video Compression
+- **049** - Upload & Rate Limits
+
+---
+
+## Phase 11: Platform & Polish (Tickets 035, 037-038, 042-046, 048, 050-052)
 
 - **035** - Settings Screen
 - **037** - Analytics Integration (PostHog)
 - **038** - Admin Moderation Interface
-- **039** - Image CDN & Optimization
-- **040** - Video Hosting & Streaming (Mux)
 - **042** - Row Level Security Policies
 - **043** - Post Detail Modal/Screen
 - **044** - Error Handling & Offline Support
 - **045** - Social OAuth Setup (Apple & Google Sign-In)
+- **046** - Auth Production Setup & Email Config
+- **048** - Unified Camera Button
+- **050** - Post Management (View/Edit/Delete)
+- **051** - Media Editing Enhancements (zoom/pan cropping added)
+- **052** - Auto-Set Pet Avatar from First Upload
 
 ---
 
@@ -140,10 +152,11 @@ This document provides an index of all tickets for the Good Baby, Bad Baby app d
 | Infrastructure | 4 |
 | Auth & Onboarding | 3 |
 | Feed & Content | 11 |
-| Social | 4 |
+| Social | 5 |
 | Competition | 4 |
 | Monetization | 2 |
 | Engagement | 2 |
 | Backend | 3 |
-| Platform/Polish | 11 |
-| **Total** | **44** |
+| Pre-Scale Infra | 4 |
+| Platform/Polish | 12 |
+| **Total** | **50** |

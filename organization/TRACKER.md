@@ -150,9 +150,10 @@
 | 044 | Error Handling & Offline Support | ⬜ | |
 | 046 | Auth Production Setup & Email Config | ⬜ | Pre-launch |
 | 048 | Unified Camera Button | ⬜ | Combine photo/video into one button |
-| 051 | Media Editing Enhancements | ⬜ | Filters, trim video, rotate, etc. |
+| 051 | Media Editing Enhancements | 🟡 | Zoom/pan crop added; filters, trim video, rotate pending |
+| 052 | Auto-Set Pet Avatar | ⬜ | Auto-thumbnail for pet avatar on first upload |
 
-**Phase 11 Progress:** 0/9 complete
+**Phase 11 Progress:** 0/10 complete
 
 ---
 
@@ -236,3 +237,5 @@ Core tickets needed for a functional MVP:
 | 2026-01-31 | 039,040,047 | New Phase 10 (Pre-Scale Infrastructure) created, Polish moved to Phase 11 |
 | 2026-01-31 | 010 | Completed - TikTok-style feed with vertical swipe, double-tap like, video autoplay, filters |
 | 2026-01-31 | 011 | Completed - Hot score algorithm, filtering, pagination, Supabase functions, expires_at filter |
+| 2026-01-31 | 051 | In Progress - Added zoom/pan cropping to photo editor |
+| 2026-01-31 | 052 | Added - Auto-set pet avatar from first upload ticket |

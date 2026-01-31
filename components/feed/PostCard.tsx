@@ -145,14 +145,14 @@ export function PostCard({
         <VideoView
           style={styles.media}
           player={player}
-          contentFit="cover"
+          contentFit="contain"
           nativeControls={false}
         />
       ) : (
         <Image
           source={{ uri: mediaUrl }}
           style={styles.media}
-          contentFit="cover"
+          contentFit="contain"
           onLoad={() => setImageLoading(false)}
           onError={() => { setImageLoading(false); setImageError(true); }}
           placeholder={thumbnailUrl ? { uri: thumbnailUrl } : undefined}

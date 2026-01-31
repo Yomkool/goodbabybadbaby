@@ -16,7 +16,7 @@ Add additional photo and video editing capabilities beyond basic cropping.
 - [ ] Rotation (90° increments)
 - [ ] Flip horizontal/vertical
 - [ ] Crop with free aspect ratio
-- [ ] Zoom/pan within crop area
+- [x] Zoom/pan within crop area (pinch to zoom, drag to pan, double-tap to reset)
 - [ ] Stickers/overlays (pet-themed)
 - [ ] Text overlay
 

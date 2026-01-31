@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,9 +15,18 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { useCreatePostStore, AspectRatio } from '@/stores';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  runOnJS,
+} from 'react-native-reanimated';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PREVIEW_SIZE = SCREEN_WIDTH - 48;
+const MIN_SCALE = 1;
+const MAX_SCALE = 4;
 
 const ASPECT_RATIOS: { value: AspectRatio; label: string; ratio: number }[] = [
   { value: '1:1', label: '1:1', ratio: 1 },
@@ -33,109 +42,296 @@ export default function MediaEditorScreen() {
     aspectRatio,
     setAspectRatio,
     setCroppedUri,
-    croppedUri,
   } = useCreatePostStore();
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [imageDimensions, setImageDimensions] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
+
+  // Gesture state for zoom and pan
+  const scale = useSharedValue(1);
+  const savedScale = useSharedValue(1);
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const savedTranslateX = useSharedValue(0);
+  const savedTranslateY = useSharedValue(0);
+
+  // Bounds for clamping (computed from React state, used in worklets)
+  const imageWidth = useSharedValue(PREVIEW_SIZE);
+  const imageHeight = useSharedValue(PREVIEW_SIZE);
+  const frameWidth = useSharedValue(PREVIEW_SIZE);
+  const frameHeight = useSharedValue(PREVIEW_SIZE);
+
+  // Store final transform values for crop calculation
+  const finalTransformRef = useRef({ scale: 1, translateX: 0, translateY: 0 });
 
   // Video player for video preview
-  const videoSource = mediaType === 'video' ? (previewUri || mediaUri) : null;
+  const videoSource = mediaType === 'video' ? mediaUri : null;
   const player = useVideoPlayer(videoSource, (player) => {
     player.loop = true;
     player.play();
   });
 
+  // Get image dimensions on load
   useEffect(() => {
     if (!mediaUri) {
       router.back();
       return;
     }
-    // Initialize preview with original media
-    setPreviewUri(mediaUri);
-  }, [mediaUri]);
-
-  const applyAspectRatio = useCallback(async () => {
-    if (!mediaUri || mediaType !== 'image') return;
-
-    setIsProcessing(true);
-    try {
-      // Get image dimensions
-      const imageInfo = await new Promise<{ width: number; height: number }>((resolve) => {
-        Image.getSize(mediaUri, (width, height) => {
-          resolve({ width, height });
-        });
+    if (mediaType === 'image') {
+      Image.getSize(mediaUri, (width, height) => {
+        setImageDimensions({ width, height });
       });
+    }
+  }, [mediaUri, mediaType]);
 
-      const selectedRatio = ASPECT_RATIOS.find((r) => r.value === aspectRatio);
-      if (!selectedRatio) return;
+  // Reset zoom/pan when aspect ratio changes
+  useEffect(() => {
+    scale.value = withSpring(1);
+    savedScale.value = 1;
+    translateX.value = withSpring(0);
+    translateY.value = withSpring(0);
+    savedTranslateX.value = 0;
+    savedTranslateY.value = 0;
+    finalTransformRef.current = { scale: 1, translateX: 0, translateY: 0 };
+  }, [aspectRatio, scale, savedScale, translateX, translateY, savedTranslateX, savedTranslateY]);
 
-      const { width: imgWidth, height: imgHeight } = imageInfo;
-      const targetRatio = selectedRatio.ratio;
+  // Update shared values for bounds when dimensions change
+  useEffect(() => {
+    if (!imageDimensions) return;
 
-      // Calculate crop dimensions to match target aspect ratio
-      let cropWidth: number;
-      let cropHeight: number;
-      let cropX: number;
-      let cropY: number;
+    const selectedRatio = ASPECT_RATIOS.find((r) => r.value === aspectRatio);
+    if (!selectedRatio) return;
 
-      const currentRatio = imgWidth / imgHeight;
+    const ratio = selectedRatio.ratio;
+    let fWidth: number, fHeight: number;
+    if (ratio <= 1) {
+      fWidth = PREVIEW_SIZE * ratio;
+      fHeight = PREVIEW_SIZE;
+    } else {
+      fWidth = PREVIEW_SIZE;
+      fHeight = PREVIEW_SIZE / ratio;
+    }
 
-      if (currentRatio > targetRatio) {
-        // Image is wider than target - crop width
-        cropHeight = imgHeight;
-        cropWidth = imgHeight * targetRatio;
-        cropX = (imgWidth - cropWidth) / 2;
-        cropY = 0;
+    frameWidth.value = fWidth;
+    frameHeight.value = fHeight;
+
+    const imgRatio = imageDimensions.width / imageDimensions.height;
+    const frameRatio = fWidth / fHeight;
+
+    if (imgRatio > frameRatio) {
+      imageHeight.value = fHeight;
+      imageWidth.value = fHeight * imgRatio;
+    } else {
+      imageWidth.value = fWidth;
+      imageHeight.value = fWidth / imgRatio;
+    }
+  }, [imageDimensions, aspectRatio, frameWidth, frameHeight, imageWidth, imageHeight]);
+
+  const getPreviewDimensions = useCallback(() => {
+    const selectedRatio = ASPECT_RATIOS.find((r) => r.value === aspectRatio);
+    if (!selectedRatio) return { width: PREVIEW_SIZE, height: PREVIEW_SIZE };
+
+    const ratio = selectedRatio.ratio;
+    if (ratio <= 1) {
+      return { width: PREVIEW_SIZE * ratio, height: PREVIEW_SIZE };
+    } else {
+      return { width: PREVIEW_SIZE, height: PREVIEW_SIZE / ratio };
+    }
+  }, [aspectRatio]);
+
+  // Calculate how the image should be sized to fill the frame (cover mode)
+  const getImageDisplaySize = useCallback(() => {
+    if (!imageDimensions) return { width: PREVIEW_SIZE, height: PREVIEW_SIZE };
+
+    const previewDims = getPreviewDimensions();
+    const imgRatio = imageDimensions.width / imageDimensions.height;
+    const frameRatio = previewDims.width / previewDims.height;
+
+    // Scale image to cover the frame (similar to cover mode)
+    if (imgRatio > frameRatio) {
+      // Image is wider - fit by height
+      const displayHeight = previewDims.height;
+      const displayWidth = displayHeight * imgRatio;
+      return { width: displayWidth, height: displayHeight };
+    } else {
+      // Image is taller - fit by width
+      const displayWidth = previewDims.width;
+      const displayHeight = displayWidth / imgRatio;
+      return { width: displayWidth, height: displayHeight };
+    }
+  }, [imageDimensions, getPreviewDimensions]);
+
+  const updateFinalTransform = useCallback(
+    (s: number, tx: number, ty: number) => {
+      finalTransformRef.current = { scale: s, translateX: tx, translateY: ty };
+    },
+    []
+  );
+
+  // Pinch gesture for zooming
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate((e) => {
+      'worklet';
+      const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, savedScale.value * e.scale));
+      scale.value = newScale;
+
+      // Clamp translation when scale changes using shared values
+      const scaledW = imageWidth.value * newScale;
+      const scaledH = imageHeight.value * newScale;
+      const maxX = Math.max(0, (scaledW - frameWidth.value) / 2);
+      const maxY = Math.max(0, (scaledH - frameHeight.value) / 2);
+      translateX.value = Math.max(-maxX, Math.min(maxX, translateX.value));
+      translateY.value = Math.max(-maxY, Math.min(maxY, translateY.value));
+    })
+    .onEnd(() => {
+      'worklet';
+      savedScale.value = scale.value;
+      savedTranslateX.value = translateX.value;
+      savedTranslateY.value = translateY.value;
+      runOnJS(updateFinalTransform)(scale.value, translateX.value, translateY.value);
+    });
+
+  // Pan gesture for moving
+  const panGesture = Gesture.Pan()
+    .onUpdate((e) => {
+      'worklet';
+      const newX = savedTranslateX.value + e.translationX;
+      const newY = savedTranslateY.value + e.translationY;
+
+      // Clamp using shared values
+      const scaledW = imageWidth.value * scale.value;
+      const scaledH = imageHeight.value * scale.value;
+      const maxX = Math.max(0, (scaledW - frameWidth.value) / 2);
+      const maxY = Math.max(0, (scaledH - frameHeight.value) / 2);
+      translateX.value = Math.max(-maxX, Math.min(maxX, newX));
+      translateY.value = Math.max(-maxY, Math.min(maxY, newY));
+    })
+    .onEnd(() => {
+      'worklet';
+      savedTranslateX.value = translateX.value;
+      savedTranslateY.value = translateY.value;
+      runOnJS(updateFinalTransform)(scale.value, translateX.value, translateY.value);
+    });
+
+  // Double tap to reset zoom
+  const doubleTapGesture = Gesture.Tap()
+    .numberOfTaps(2)
+    .onEnd(() => {
+      'worklet';
+      scale.value = withSpring(1);
+      savedScale.value = 1;
+      translateX.value = withSpring(0);
+      translateY.value = withSpring(0);
+      savedTranslateX.value = 0;
+      savedTranslateY.value = 0;
+      runOnJS(updateFinalTransform)(1, 0, 0);
+    });
+
+  const composedGestures = Gesture.Simultaneous(
+    pinchGesture,
+    Gesture.Race(doubleTapGesture, panGesture)
+  );
+
+  const animatedImageStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+  }));
+
+  const applyCropWithTransform = useCallback(async () => {
+    if (!mediaUri || mediaType !== 'image' || !imageDimensions) return null;
+
+    const selectedRatio = ASPECT_RATIOS.find((r) => r.value === aspectRatio);
+    if (!selectedRatio) return null;
+
+    const { width: imgWidth, height: imgHeight } = imageDimensions;
+    const targetRatio = selectedRatio.ratio;
+    const previewDims = getPreviewDimensions();
+    const imageDisplaySize = getImageDisplaySize();
+
+    const { scale: s, translateX: tx, translateY: ty } = finalTransformRef.current;
+
+    // Calculate the ratio of actual image pixels to displayed pixels
+    const pixelRatioX = imgWidth / imageDisplaySize.width;
+    const pixelRatioY = imgHeight / imageDisplaySize.height;
+
+    // Frame position relative to scaled image center
+    const frameLeft = -previewDims.width / 2 - tx;
+    const frameTop = -previewDims.height / 2 - ty;
+
+    // Convert to unscaled image display coordinates
+    const unscaledLeft = frameLeft / s;
+    const unscaledTop = frameTop / s;
+    const unscaledWidth = previewDims.width / s;
+    const unscaledHeight = previewDims.height / s;
+
+    // Convert to actual image pixel coordinates (relative to image center)
+    const imgCenterX = imgWidth / 2;
+    const imgCenterY = imgHeight / 2;
+
+    let cropX = imgCenterX + unscaledLeft * pixelRatioX;
+    let cropY = imgCenterY + unscaledTop * pixelRatioY;
+    let cropWidth = unscaledWidth * pixelRatioX;
+    let cropHeight = unscaledHeight * pixelRatioY;
+
+    // Ensure crop stays within image bounds
+    cropX = Math.max(0, Math.min(imgWidth - 1, cropX));
+    cropY = Math.max(0, Math.min(imgHeight - 1, cropY));
+    cropWidth = Math.min(cropWidth, imgWidth - cropX);
+    cropHeight = Math.min(cropHeight, imgHeight - cropY);
+
+    // Ensure minimum size
+    cropWidth = Math.max(10, cropWidth);
+    cropHeight = Math.max(10, cropHeight);
+
+    // Adjust to maintain aspect ratio
+    const currentCropRatio = cropWidth / cropHeight;
+    if (Math.abs(currentCropRatio - targetRatio) > 0.01) {
+      if (currentCropRatio > targetRatio) {
+        cropWidth = cropHeight * targetRatio;
       } else {
-        // Image is taller than target - crop height
-        cropWidth = imgWidth;
-        cropHeight = imgWidth / targetRatio;
-        cropX = 0;
-        cropY = (imgHeight - cropHeight) / 2;
+        cropHeight = cropWidth / targetRatio;
       }
+    }
 
-      // Apply crop
+    try {
       const manipulated = await ImageManipulator.manipulateAsync(
         mediaUri,
         [
           {
             crop: {
-              originX: cropX,
-              originY: cropY,
-              width: cropWidth,
-              height: cropHeight,
+              originX: Math.round(cropX),
+              originY: Math.round(cropY),
+              width: Math.round(cropWidth),
+              height: Math.round(cropHeight),
             },
           },
         ],
         { compress: 0.9, format: ImageManipulator.SaveFormat.JPEG }
       );
 
-      setPreviewUri(manipulated.uri);
-      setCroppedUri(manipulated.uri);
+      return manipulated.uri;
     } catch (err) {
-      console.error('Error applying aspect ratio:', err);
-      Alert.alert('Error', 'Failed to process image. Please try again.');
-    } finally {
-      setIsProcessing(false);
+      console.error('Error cropping image:', err);
+      return null;
     }
-  }, [mediaUri, mediaType, aspectRatio, setCroppedUri]);
-
-  useEffect(() => {
-    // When aspect ratio changes for images, we show the crop preview
-    if (mediaType === 'image' && mediaUri) {
-      applyAspectRatio();
-    }
-  }, [aspectRatio, mediaUri, mediaType, applyAspectRatio]);
+  }, [mediaUri, mediaType, imageDimensions, aspectRatio, getPreviewDimensions, getImageDisplaySize]);
 
   const handleNext = async () => {
     if (!mediaUri) return;
 
     setIsProcessing(true);
     try {
-      if (mediaType === 'image' && !croppedUri) {
-        // If no crop applied yet, apply it now
-        await applyAspectRatio();
+      if (mediaType === 'image') {
+        const croppedUri = await applyCropWithTransform();
+        if (croppedUri) {
+          setCroppedUri(croppedUri);
+        }
       }
       router.push('/(create)/details' as Href);
     } catch (err) {
@@ -146,21 +342,8 @@ export default function MediaEditorScreen() {
     }
   };
 
-  const getPreviewDimensions = () => {
-    const selectedRatio = ASPECT_RATIOS.find((r) => r.value === aspectRatio);
-    if (!selectedRatio) return { width: PREVIEW_SIZE, height: PREVIEW_SIZE };
-
-    const ratio = selectedRatio.ratio;
-    if (ratio <= 1) {
-      // Portrait or square
-      return { width: PREVIEW_SIZE * ratio, height: PREVIEW_SIZE };
-    } else {
-      // Landscape
-      return { width: PREVIEW_SIZE, height: PREVIEW_SIZE / ratio };
-    }
-  };
-
   const previewDimensions = getPreviewDimensions();
+  const imageDisplaySize = getImageDisplaySize();
 
   if (!mediaUri) {
     return (
@@ -195,14 +378,27 @@ export default function MediaEditorScreen() {
               contentFit="cover"
               nativeControls
             />
-          ) : mediaType === 'image' ? (
-            <Image
-              source={{ uri: previewUri || mediaUri }}
-              style={styles.preview}
-              resizeMode="cover"
-            />
+          ) : mediaType === 'image' && imageDimensions ? (
+            <GestureDetector gesture={composedGestures}>
+              <Animated.View style={styles.gestureContainer}>
+                <Animated.Image
+                  source={{ uri: mediaUri }}
+                  style={[
+                    {
+                      width: imageDisplaySize.width,
+                      height: imageDisplaySize.height,
+                    },
+                    animatedImageStyle,
+                  ]}
+                  resizeMode="cover"
+                />
+              </Animated.View>
+            </GestureDetector>
           ) : null}
         </View>
+        {mediaType === 'image' && (
+          <Text style={styles.zoomHint}>Pinch to zoom, drag to pan, double-tap to reset</Text>
+        )}
       </View>
 
       {/* Aspect Ratio Selector (only for images) */}
@@ -298,6 +494,19 @@ const styles = StyleSheet.create({
   preview: {
     width: '100%',
     height: '100%',
+  },
+  gestureContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  zoomHint: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 8,
+    textAlign: 'center',
   },
   processingOverlay: {
     ...StyleSheet.absoluteFillObject,
