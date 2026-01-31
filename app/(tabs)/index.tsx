@@ -18,6 +18,7 @@ export default function FeedScreen() {
   const insets = useSafeAreaInsets();
   const isFocused = useIsFocused();
   const [visiblePostId, setVisiblePostId] = useState<string | null>(null);
+  const [visibleIndex, setVisibleIndex] = useState(0);
   const [showOverlays, setShowOverlays] = useState(true);
   const [containerHeight, setContainerHeight] = useState(0);
 
@@ -52,6 +53,7 @@ export default function FeedScreen() {
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
       if (viewableItems.length > 0 && viewableItems[0].item) {
         setVisiblePostId(viewableItems[0].item.id);
+        setVisibleIndex(viewableItems[0].index ?? 0);
         setShowOverlays(true);
       }
     },
@@ -67,17 +69,24 @@ export default function FeedScreen() {
   }, []);
 
   const renderPostCard = useCallback(
-    ({ item }: { item: FeedPost }) => (
-      <PostCard
-        post={item}
-        isVisible={item.id === visiblePostId && isFocused}
-        showOverlay={showOverlays}
-        cardHeight={containerHeight}
-        onLike={() => toggleLike(item.id)}
-        onToggleOverlay={handleToggleOverlay}
-      />
-    ),
-    [visiblePostId, isFocused, showOverlays, containerHeight, toggleLike, handleToggleOverlay]
+    ({ item, index }: { item: FeedPost; index: number }) => {
+      const isVisible = item.id === visiblePostId && isFocused;
+      // Preload the next video for smoother scrolling
+      const shouldPreload = index === visibleIndex + 1;
+
+      return (
+        <PostCard
+          post={item}
+          isVisible={isVisible}
+          shouldPreload={shouldPreload}
+          showOverlay={showOverlays}
+          cardHeight={containerHeight}
+          onLike={() => toggleLike(item.id)}
+          onToggleOverlay={handleToggleOverlay}
+        />
+      );
+    },
+    [visiblePostId, visibleIndex, isFocused, showOverlays, containerHeight, toggleLike, handleToggleOverlay]
   );
 
   const keyExtractor = useCallback((item: FeedPost) => item.id, []);

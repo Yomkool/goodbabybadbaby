@@ -4,22 +4,28 @@ import {
   Text,
   StyleSheet,
   TouchableWithoutFeedback,
+  TouchableOpacity,
   Dimensions,
   ActivityIndicator,
   Animated,
+  PanResponder,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { FontAwesome } from '@expo/vector-icons';
 import type { FeedPost } from '@/stores/feedStore';
+import { useVideoStore } from '@/stores/videoStore';
 import { getSpeciesEmoji } from '@/lib/constants/species';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DOUBLE_TAP_DELAY = 300;
+const PROGRESS_BAR_HEIGHT = 3;
+const PROGRESS_BAR_HIT_SLOP = 20;
 
 interface PostCardProps {
   post: FeedPost;
   isVisible: boolean;
+  shouldPreload?: boolean;
   showOverlay: boolean;
   cardHeight: number;
   onLike: () => void;
@@ -29,6 +35,7 @@ interface PostCardProps {
 export function PostCard({
   post,
   isVisible,
+  shouldPreload = false,
   showOverlay,
   cardHeight,
   onLike,
@@ -37,34 +44,110 @@ export function PostCard({
   const [imageLoading, setImageLoading] = useState(true);
   const [imageError, setImageError] = useState(false);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [isBuffering, setIsBuffering] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [seekPosition, setSeekPosition] = useState(0);
   const [showLikeAnimation, setShowLikeAnimation] = useState(false);
   const likeScale = useRef(new Animated.Value(0)).current;
   const lastTap = useRef<number>(0);
+  const progressBarWidth = useRef(0);
+
+  const { isMuted, toggleMute } = useVideoStore();
 
   const isVideo = post.media.type === 'video';
   const mediaUrl = post.media.cdn_url || post.media.original_url;
   const thumbnailUrl = post.media.thumbnail_url;
 
-  const player = useVideoPlayer(isVideo && isVisible ? mediaUrl : null, (p) => {
+  // Create player for visible post or preloading post (next in feed)
+  const shouldCreatePlayer = isVideo && (isVisible || shouldPreload);
+  const player = useVideoPlayer(shouldCreatePlayer ? mediaUrl : null, (p) => {
     p.loop = true;
-    p.muted = false;
+    p.muted = isMuted;
   });
 
+  // Sync mute state with player
+  useEffect(() => {
+    if (player) {
+      player.muted = isMuted;
+    }
+  }, [player, isMuted]);
+
+  // Handle playback state
   useEffect(() => {
     if (isVideo && player) {
-      if (isVisible && isPlaying) {
+      if (isVisible && isPlaying && !isSeeking) {
         player.play();
       } else {
         player.pause();
       }
     }
-  }, [isVideo, player, isVisible, isPlaying]);
+  }, [isVideo, player, isVisible, isPlaying, isSeeking]);
 
+  // Reset playing state when becoming visible
   useEffect(() => {
     if (isVisible) {
       setIsPlaying(true);
     }
   }, [isVisible]);
+
+  // Track video progress and buffering
+  useEffect(() => {
+    if (!player || !isVideo) return;
+
+    const statusSubscription = player.addListener('statusChange', (payload) => {
+      setIsBuffering(payload.status === 'loading');
+    });
+
+    const progressInterval = setInterval(() => {
+      if (player && !isSeeking) {
+        setCurrentTime(player.currentTime);
+        if (player.duration > 0) {
+          setDuration(player.duration);
+        }
+      }
+    }, 100);
+
+    return () => {
+      statusSubscription.remove();
+      clearInterval(progressInterval);
+    };
+  }, [player, isVideo, isSeeking]);
+
+  // Progress bar pan responder for seeking
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt) => {
+        if (!isVideo || !player || duration <= 0) return;
+        setIsSeeking(true);
+        const x = evt.nativeEvent.locationX;
+        const progress = Math.max(0, Math.min(1, x / progressBarWidth.current));
+        setSeekPosition(progress);
+      },
+      onPanResponderMove: (evt) => {
+        if (!isVideo || !player || duration <= 0) return;
+        const x = evt.nativeEvent.locationX;
+        const progress = Math.max(0, Math.min(1, x / progressBarWidth.current));
+        setSeekPosition(progress);
+      },
+      onPanResponderRelease: () => {
+        if (!isVideo || !player || duration <= 0) return;
+        const newTime = seekPosition * duration;
+        player.currentTime = newTime;
+        setCurrentTime(newTime);
+        setIsSeeking(false);
+        if (isPlaying) {
+          player.play();
+        }
+      },
+      onPanResponderTerminate: () => {
+        setIsSeeking(false);
+      },
+    })
+  ).current;
 
   // Animate the like heart
   const animateLike = useCallback(() => {
@@ -138,6 +221,8 @@ export function PostCard({
     return count.toString();
   };
 
+  const progress = isSeeking ? seekPosition : (duration > 0 ? currentTime / duration : 0);
+
   return (
     <View style={[styles.container, { height: cardHeight }]}>
       {/* Media */}
@@ -160,9 +245,17 @@ export function PostCard({
         />
       )}
 
+      {/* Image loading spinner */}
       {imageLoading && !isVideo && (
         <View style={styles.loading}>
           <ActivityIndicator size="small" color="#fff" />
+        </View>
+      )}
+
+      {/* Video buffering spinner */}
+      {isVideo && isBuffering && isVisible && (
+        <View style={styles.bufferingContainer} pointerEvents="none">
+          <ActivityIndicator size="large" color="#fff" />
         </View>
       )}
 
@@ -196,10 +289,37 @@ export function PostCard({
       )}
 
       {/* Pause indicator */}
-      {isVideo && !isPlaying && (
+      {isVideo && !isPlaying && !isBuffering && (
         <View style={styles.pauseIcon} pointerEvents="none">
           <FontAwesome name="play" size={36} color="rgba(255,255,255,0.8)" />
         </View>
+      )}
+
+      {/* Video progress bar */}
+      {isVideo && duration > 0 && (
+        <View
+          style={styles.progressBarContainer}
+          onLayout={(e) => { progressBarWidth.current = e.nativeEvent.layout.width; }}
+          {...panResponder.panHandlers}
+        >
+          <View style={styles.progressBarTrack}>
+            <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
+          </View>
+          {isSeeking && (
+            <View style={[styles.seekThumb, { left: `${progress * 100}%` }]} />
+          )}
+        </View>
+      )}
+
+      {/* Mute button for videos */}
+      {isVideo && showOverlay && (
+        <TouchableOpacity style={styles.muteBtn} onPress={toggleMute} activeOpacity={0.7}>
+          <FontAwesome
+            name={isMuted ? 'volume-off' : 'volume-up'}
+            size={18}
+            color="#fff"
+          />
+        </TouchableOpacity>
       )}
 
       {/* Overlay */}
@@ -274,6 +394,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.3)',
   },
+  bufferingContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   error: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
@@ -299,6 +424,51 @@ const styles = StyleSheet.create({
     left: '50%',
     marginTop: -18,
     marginLeft: -18,
+  },
+  progressBarContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: PROGRESS_BAR_HEIGHT + PROGRESS_BAR_HIT_SLOP * 2,
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+  },
+  progressBarTrack: {
+    height: PROGRESS_BAR_HEIGHT,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderRadius: PROGRESS_BAR_HEIGHT / 2,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#fff',
+    borderRadius: PROGRESS_BAR_HEIGHT / 2,
+  },
+  seekThumb: {
+    position: 'absolute',
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#fff',
+    marginLeft: -6,
+    top: PROGRESS_BAR_HIT_SLOP - 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  muteBtn: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   overlayContainer: {
     ...StyleSheet.absoluteFillObject,

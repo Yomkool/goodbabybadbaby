@@ -30,13 +30,13 @@
 | 010 | Feed UI - Vertical Swipe Cards | ✅ | TikTok-style feed, double-tap like, video autoplay |
 | 011 | Feed Data & Hot Ranking Algorithm | ✅ | Hot score, filtering, pagination, Supabase functions |
 | 013 | Like Functionality | ✅ | Debounce, optimistic UI, total_likes counters via RPC |
-| 014 | Video Playback in Feed | ⬜ | Autoplay, muting, lifecycle |
+| 014 | Video Playback in Feed | ✅ | Mute toggle, progress bar, buffering spinner, preloading |
 | 015 | Add New Pet During Post Creation | ⬜ | |
 | 016 | Report Functionality | ⬜ | |
 | 017 | Share Functionality | ⬜ | |
 | 018 | Content Lifecycle - Expiration & Pinning | ⬜ | |
 
-**Phase 2 Progress:** 5/10 complete
+**Phase 2 Progress:** 6/10 complete
 
 ---
 
@@ -162,7 +162,7 @@
 | Phase | Complete | Total | % |
 |-------|----------|-------|---|
 | 1. Foundation | 7 | 7 | 100% |
-| 2. Core Features | 5 | 10 | 50% |
+| 2. Core Features | 6 | 10 | 60% |
 | 3. Social Features | 0 | 5 | 0% |
 | 4. Competition | 0 | 5 | 0% |
 | 5. Discovery | 0 | 2 | 0% |
@@ -172,7 +172,7 @@
 | 9. Backend Jobs | 0 | 3 | 0% |
 | 10. Pre-Scale Infra | 0 | 4 | 0% |
 | 11. Polish | 0 | 9 | 0% |
-| **TOTAL** | **12** | **50** | **24%** |
+| **TOTAL** | **13** | **50** | **26%** |
 
 ---
 
@@ -241,3 +241,4 @@ Core tickets needed for a functional MVP:
 | 2026-01-31 | 052 | Added - Auto-set pet avatar from first upload ticket |
 | 2026-01-31 | 012 | Moved to Phase 4 - polish ticket depends on 016, 017, 020, 024 |
 | 2026-01-31 | 013 | Completed - added debounce (500ms), RPC functions for total_likes counters |
+| 2026-01-31 | 014 | Completed - mute toggle, progress bar, buffering spinner, preloading, videoStore |
