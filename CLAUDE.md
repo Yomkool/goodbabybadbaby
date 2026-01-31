@@ -17,6 +17,7 @@ A TikTok-style React Native/Expo app for sharing pet content. Users post "good b
 - **architecture.md**: Update if you add new directories, change patterns, add dependencies, or modify the tech stack.
 - **TRACKER.md**: Update ticket status (⬜ → 🔄 → ✅) and progress percentages when completing work.
 - **Individual tickets**: Mark acceptance criteria as complete with checkmarks when implemented.
+- **SCALE-CONSIDERATIONS.md**: Add notes when you identify something that works now but may need optimization at scale.
 
 ### Code Cleanup
 After completing changes, review the code and:
