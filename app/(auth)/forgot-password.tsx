@@ -9,7 +9,6 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { router, Href } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

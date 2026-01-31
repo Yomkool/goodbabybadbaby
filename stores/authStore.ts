@@ -87,7 +87,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // Listen for auth changes
       supabase.auth.onAuthStateChange(async (event, session) => {
-        console.log('Auth state changed:', event);
+        // Debug auth state changes (remove for production)
 
         if (event === 'SIGNED_IN' && session?.user) {
           // Fetch user profile and pets
@@ -144,7 +144,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
       });
@@ -158,7 +158,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // User profile will be set by the auth state change listener
       set({ isLoading: false });
       return { error: null };
-    } catch (err) {
+    } catch {
       const errorMessage = 'An unexpected error occurred. Please try again.';
       set({ isLoading: false, error: errorMessage });
       return { error: errorMessage };
@@ -194,7 +194,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       set({ isLoading: false });
       return { error: null };
-    } catch (err) {
+    } catch {
       const errorMessage = 'An unexpected error occurred. Please try again.';
       set({ isLoading: false, error: errorMessage });
       return { error: errorMessage };
@@ -240,7 +240,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       set({ isLoading: false });
       return { error: null };
-    } catch (err) {
+    } catch {
       const errorMessage = 'An unexpected error occurred. Please try again.';
       set({ isLoading: false, error: errorMessage });
       return { error: errorMessage };

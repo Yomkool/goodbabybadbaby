@@ -79,7 +79,7 @@ export function FeedFilters({
           style={[styles.chip, filter === 'good' && styles.chipGood]}
           onPress={() => onFilterChange('good')}
         >
-          <Text style={styles.chipEmoji}>☀️</Text>
+          <Text style={styles.chipEmoji}>😇</Text>
         </Pressable>
         <Pressable
           style={[styles.chip, filter === 'bad' && styles.chipBad]}

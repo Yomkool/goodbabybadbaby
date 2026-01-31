@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet, Pressable, ScrollView, Image } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import type { Pet, SpeciesType } from '@/types';
+import type { Pet } from '@/types';
+import { getSpeciesEmoji } from '@/lib/constants/species';
 
 interface PetSelectorProps {
   pets: Pet[];
@@ -9,22 +10,6 @@ interface PetSelectorProps {
   onAddPet?: () => void;
   disabled?: boolean;
 }
-
-const SPECIES_EMOJI: Record<SpeciesType, string> = {
-  dog: '🐕',
-  cat: '🐈',
-  bird: '🐦',
-  rabbit: '🐰',
-  hamster: '🐹',
-  guinea_pig: '🐹',
-  fish: '🐟',
-  reptile: '🦎',
-  amphibian: '🐸',
-  horse: '🐴',
-  farm: '🐄',
-  exotic: '🦜',
-  other: '🐾',
-};
 
 export function PetSelector({
   pets,
@@ -76,7 +61,7 @@ export function PetSelector({
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarEmoji}>
-                {SPECIES_EMOJI[pet.species] || '🐾'}
+                {getSpeciesEmoji(pet.species)}
               </Text>
             </View>
           )}

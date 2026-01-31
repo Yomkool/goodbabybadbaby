@@ -21,22 +21,7 @@ import { File } from 'expo-file-system';
 import { useAuthStore } from '@/stores/authStore';
 import { supabase } from '@/lib/supabase';
 import type { SpeciesType } from '@/types';
-
-const SPECIES_OPTIONS: { value: SpeciesType; label: string; emoji: string }[] = [
-  { value: 'dog', label: 'Dog', emoji: '🐕' },
-  { value: 'cat', label: 'Cat', emoji: '🐈' },
-  { value: 'bird', label: 'Bird', emoji: '🐦' },
-  { value: 'rabbit', label: 'Rabbit', emoji: '🐰' },
-  { value: 'hamster', label: 'Hamster', emoji: '🐹' },
-  { value: 'guinea_pig', label: 'Guinea Pig', emoji: '🐹' },
-  { value: 'fish', label: 'Fish', emoji: '🐟' },
-  { value: 'reptile', label: 'Reptile', emoji: '🦎' },
-  { value: 'amphibian', label: 'Amphibian', emoji: '🐸' },
-  { value: 'horse', label: 'Horse', emoji: '🐴' },
-  { value: 'farm', label: 'Farm Animal', emoji: '🐄' },
-  { value: 'exotic', label: 'Exotic', emoji: '🦜' },
-  { value: 'other', label: 'Other', emoji: '🐾' },
-];
+import { SPECIES_OPTIONS, getSpeciesEmoji } from '@/lib/constants/species';
 
 const MAX_NAME_LENGTH = 30;
 const MIN_NAME_LENGTH = 1;
@@ -51,11 +36,6 @@ export default function AddPetScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const getSpeciesEmoji = (speciesType: SpeciesType | null) => {
-    if (!speciesType) return '🐾';
-    return SPECIES_OPTIONS.find((s) => s.value === speciesType)?.emoji || '🐾';
-  };
 
   const pickImage = async () => {
     try {
@@ -330,7 +310,7 @@ export default function AddPetScreen() {
               <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
             ) : (
               <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarEmoji}>{getSpeciesEmoji(species)}</Text>
+                <Text style={styles.avatarEmoji}>{getSpeciesEmoji(species || 'other')}</Text>
                 <View style={styles.avatarAddBadge}>
                   <FontAwesome name="camera" size={14} color="#fff" />
                 </View>

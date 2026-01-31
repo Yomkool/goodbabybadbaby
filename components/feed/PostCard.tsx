@@ -12,6 +12,7 @@ import { Image } from 'expo-image';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { FontAwesome } from '@expo/vector-icons';
 import type { FeedPost } from '@/stores/feedStore';
+import { getSpeciesEmoji } from '@/lib/constants/species';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const DOUBLE_TAP_DELAY = 300;
@@ -137,15 +138,6 @@ export function PostCard({
     return count.toString();
   };
 
-  const getEmoji = (species: string): string => {
-    const map: Record<string, string> = {
-      dog: '🐕', cat: '🐈', bird: '🐦', rabbit: '🐰', hamster: '🐹',
-      guinea_pig: '🐹', fish: '🐟', reptile: '🦎', amphibian: '🐸',
-      horse: '🐴', farm: '🐄', exotic: '🦜', other: '🐾',
-    };
-    return map[species] || '🐾';
-  };
-
   return (
     <View style={[styles.container, { height: cardHeight }]}>
       {/* Media */}
@@ -240,7 +232,7 @@ export function PostCard({
                 <Image source={{ uri: post.pet.avatar_url }} style={styles.avatar} />
               ) : (
                 <View style={styles.avatarPlaceholder}>
-                  <Text style={styles.avatarEmoji}>{getEmoji(post.pet.species)}</Text>
+                  <Text style={styles.avatarEmoji}>{getSpeciesEmoji(post.pet.species)}</Text>
                 </View>
               )}
               <View style={styles.names}>

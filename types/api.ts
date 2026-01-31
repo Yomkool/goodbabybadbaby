@@ -171,9 +171,8 @@ export interface GetFeedRequest extends PaginationParams {
   tag?: string;
 }
 
-export interface GetFeedResponse extends PaginatedResponse<PostWithRelations> {
-  // Posts include isLikedByCurrentUser flag
-}
+// Posts include isLikedByCurrentUser flag
+export type GetFeedResponse = PaginatedResponse<PostWithRelations>;
 
 export interface GetUserFeedRequest extends PaginationParams {
   userId: string;
@@ -185,9 +184,8 @@ export interface GetPetFeedRequest extends PaginationParams {
   includePinned?: boolean;
 }
 
-export interface GetFollowingFeedRequest extends PaginationParams {
-  // Uses authenticated user's follows
-}
+// Uses authenticated user's follows
+export type GetFollowingFeedRequest = PaginationParams;
 
 // ============================================================================
 // Like API Types
@@ -205,9 +203,8 @@ export interface GetLikesRequest extends PaginationParams {
   postId: string;
 }
 
-export interface GetLikesResponse extends PaginatedResponse<User> {
-  // Users who liked the post
-}
+// Users who liked the post
+export type GetLikesResponse = PaginatedResponse<User>;
 
 // ============================================================================
 // Follow API Types
@@ -225,17 +222,15 @@ export interface GetFollowersRequest extends PaginationParams {
   petId: string;
 }
 
-export interface GetFollowersResponse extends PaginatedResponse<User> {
-  // Users following the pet
-}
+// Users following the pet
+export type GetFollowersResponse = PaginatedResponse<User>;
 
 export interface GetFollowingRequest extends PaginationParams {
   userId: string;
 }
 
-export interface GetFollowingResponse extends PaginatedResponse<Pet> {
-  // Pets the user is following
-}
+// Pets the user is following
+export type GetFollowingResponse = PaginatedResponse<Pet>;
 
 // ============================================================================
 // Leaderboard API Types
