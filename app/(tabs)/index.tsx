@@ -1,161 +1,239 @@
-import { StyleSheet, Pressable, ScrollView } from 'react-native';
+import { useEffect, useCallback, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  RefreshControl,
+  ActivityIndicator,
+  ViewToken,
+  LayoutChangeEvent,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import { Text, View } from '@/components/Themed';
-import { useAuthStore } from '@/stores/authStore';
+import { useIsFocused } from '@react-navigation/native';
+import { useFeedStore, FeedPost } from '@/stores/feedStore';
+import { PostCard, FeedFilters } from '@/components/feed';
 
 export default function FeedScreen() {
   const insets = useSafeAreaInsets();
-  const { user, pets, signOut, isLoading } = useAuthStore();
+  const isFocused = useIsFocused();
+  const [visiblePostId, setVisiblePostId] = useState<string | null>(null);
+  const [showOverlays, setShowOverlays] = useState(true);
+  const [containerHeight, setContainerHeight] = useState(0);
 
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[
-        styles.content,
-        { paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20 },
-      ]}
-    >
-      <Text style={styles.title}>Welcome!</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+  const {
+    posts,
+    filters,
+    isLoading,
+    isRefreshing,
+    isLoadingMore,
+    hasMore,
+    error,
+    fetchFeed,
+    refreshFeed,
+    loadMore,
+    setFilter,
+    setFeedType,
+    setSpeciesFilter,
+    toggleLike,
+  } = useFeedStore();
 
-      {user && (
-        <View style={styles.userInfo}>
-          <Text style={styles.label}>Logged in as:</Text>
-          <Text style={styles.userName}>{user.display_name}</Text>
+  useEffect(() => {
+    fetchFeed();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleLayout = useCallback((event: LayoutChangeEvent) => {
+    const { height } = event.nativeEvent.layout;
+    setContainerHeight(height);
+  }, []);
+
+  const onViewableItemsChanged = useCallback(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      if (viewableItems.length > 0 && viewableItems[0].item) {
+        setVisiblePostId(viewableItems[0].item.id);
+        setShowOverlays(true);
+      }
+    },
+    []
+  );
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50,
+  }).current;
+
+  const handleToggleOverlay = useCallback(() => {
+    setShowOverlays((prev) => !prev);
+  }, []);
+
+  const renderPostCard = useCallback(
+    ({ item }: { item: FeedPost }) => (
+      <PostCard
+        post={item}
+        isVisible={item.id === visiblePostId && isFocused}
+        showOverlay={showOverlays}
+        cardHeight={containerHeight}
+        onLike={() => toggleLike(item.id)}
+        onToggleOverlay={handleToggleOverlay}
+      />
+    ),
+    [visiblePostId, isFocused, showOverlays, containerHeight, toggleLike, handleToggleOverlay]
+  );
+
+  const keyExtractor = useCallback((item: FeedPost) => item.id, []);
+
+  const getItemLayout = useCallback(
+    (_: any, index: number) => ({
+      length: containerHeight,
+      offset: containerHeight * index,
+      index,
+    }),
+    [containerHeight]
+  );
+
+  const handleEndReached = useCallback(() => {
+    if (hasMore && !isLoadingMore) {
+      loadMore();
+    }
+  }, [hasMore, isLoadingMore, loadMore]);
+
+  const renderFooter = useCallback(() => {
+    if (!isLoadingMore) return null;
+    return (
+      <View style={[styles.footer, { height: containerHeight }]}>
+        <ActivityIndicator size="large" color="#fff" />
+      </View>
+    );
+  }, [isLoadingMore, containerHeight]);
+
+  const renderEmpty = useCallback(() => {
+    if (isLoading) {
+      return (
+        <View style={[styles.emptyContainer, { height: containerHeight }]}>
+          <ActivityIndicator size="large" color="#fff" />
         </View>
-      )}
+      );
+    }
 
-      {pets.length > 0 && (
-        <View style={styles.petsSection}>
-          <Text style={styles.sectionTitle}>Your Pets</Text>
-          {pets.map((pet) => (
-            <View key={pet.id} style={styles.petCard}>
-              <Text style={styles.petEmoji}>
-                {pet.species === 'dog' ? '🐕' :
-                 pet.species === 'cat' ? '🐈' :
-                 pet.species === 'bird' ? '🐦' :
-                 pet.species === 'rabbit' ? '🐰' :
-                 pet.species === 'fish' ? '🐟' :
-                 pet.species === 'reptile' ? '🦎' :
-                 pet.species === 'horse' ? '🐴' : '🐾'}
-              </Text>
-              <View style={styles.petInfo}>
-                <Text style={styles.petName}>{pet.name}</Text>
-                <Text style={styles.petSpecies}>{pet.species}</Text>
-              </View>
-            </View>
-          ))}
+    if (error) {
+      return (
+        <View style={[styles.emptyContainer, { height: containerHeight }]}>
+          <Text style={styles.emptyEmoji}>😿</Text>
+          <Text style={styles.emptyTitle}>Oops!</Text>
+          <Text style={styles.emptyText}>{error}</Text>
         </View>
-      )}
+      );
+    }
 
-      <View style={styles.placeholder}>
-        <Text style={styles.placeholderText}>
-          Feed will be implemented in upcoming tickets
+    return (
+      <View style={[styles.emptyContainer, { height: containerHeight }]}>
+        <Text style={styles.emptyEmoji}>
+          {filters.type === 'following' ? '👀' : '🐾'}
+        </Text>
+        <Text style={styles.emptyTitle}>
+          {filters.type === 'following' ? 'No posts yet' : 'No posts yet'}
+        </Text>
+        <Text style={styles.emptyText}>
+          {filters.type === 'following'
+            ? 'Follow some pets to see their posts!'
+            : 'Be the first to share your pet!'}
         </Text>
       </View>
+    );
+  }, [isLoading, error, containerHeight, filters.type]);
 
-      <Pressable
-        style={({ pressed }) => [styles.logoutButton, pressed && styles.logoutButtonPressed]}
-        onPress={signOut}
-        disabled={isLoading}
-      >
-        <Text style={styles.logoutButtonText}>{isLoading ? 'Signing out...' : 'Sign Out'}</Text>
-      </Pressable>
-    </ScrollView>
+  return (
+    <View style={styles.container}>
+      {/* Feed container - measures available height */}
+      <View style={styles.feedContainer} onLayout={handleLayout}>
+        {containerHeight > 0 && (
+          <FlatList
+            data={posts}
+            renderItem={renderPostCard}
+            keyExtractor={keyExtractor}
+            getItemLayout={getItemLayout}
+            pagingEnabled
+            disableIntervalMomentum
+            snapToInterval={containerHeight}
+            snapToAlignment="start"
+            decelerationRate="fast"
+            showsVerticalScrollIndicator={false}
+            onViewableItemsChanged={onViewableItemsChanged}
+            viewabilityConfig={viewabilityConfig}
+            onEndReached={handleEndReached}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={renderFooter}
+            ListEmptyComponent={renderEmpty}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={refreshFeed}
+                tintColor="#fff"
+                colors={['#fff']}
+                progressBackgroundColor="#333"
+              />
+            }
+            removeClippedSubviews
+            maxToRenderPerBatch={2}
+            windowSize={3}
+            initialNumToRender={1}
+          />
+        )}
+      </View>
+
+      {/* Filter bar - positioned over content */}
+      {showOverlays && (
+        <View style={[styles.filterWrapper, { top: insets.top }]}>
+          <FeedFilters
+            feedType={filters.type}
+            filter={filters.filter}
+            species={filters.species}
+            onFeedTypeChange={setFeedType}
+            onFilterChange={setFilter}
+            onSpeciesChange={setSpeciesFilter}
+          />
+        </View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#000',
   },
-  content: {
-    padding: 20,
+  feedContainer: {
+    flex: 1,
+  },
+  filterWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 10,
+  },
+  emptyContainer: {
+    justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 40,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+  emptyEmoji: {
+    fontSize: 48,
+    marginBottom: 12,
   },
-  separator: {
-    marginVertical: 20,
-    height: 1,
-    width: '80%',
-  },
-  userInfo: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-  },
-  userName: {
+  emptyTitle: {
+    color: '#fff',
     fontSize: 18,
     fontWeight: '600',
+    marginBottom: 6,
   },
-  petsSection: {
-    width: '100%',
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: '#666',
-  },
-  petCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  petEmoji: {
-    fontSize: 32,
-    marginRight: 12,
-  },
-  petInfo: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  petName: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  petSpecies: {
+  emptyText: {
+    color: 'rgba(255,255,255,0.6)',
     fontSize: 14,
-    color: '#666',
-    textTransform: 'capitalize',
-  },
-  placeholder: {
-    backgroundColor: '#f0f0f0',
-    padding: 40,
-    borderRadius: 12,
-    marginVertical: 20,
-    width: '100%',
-    alignItems: 'center',
-  },
-  placeholderText: {
-    color: '#999',
     textAlign: 'center',
   },
-  logoutButton: {
-    backgroundColor: '#f44336',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 8,
-    marginTop: 20,
-  },
-  logoutButtonPressed: {
-    opacity: 0.8,
-  },
-  logoutButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  footer: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
