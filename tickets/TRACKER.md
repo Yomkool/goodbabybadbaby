@@ -1,6 +1,6 @@
 # Good Baby, Bad Baby - Ticket Tracker
 
-> **Last Updated:** 2026-01-29
+> **Last Updated:** 2026-01-30
 > **Status Legend:** ⬜ Not Started | 🟡 In Progress | ✅ Complete | ⏸️ Blocked
 
 ---
@@ -25,13 +25,13 @@
 
 | # | Ticket | Status | Notes |
 |---|--------|--------|-------|
-| 008 | Feed UI - Vertical Swipe Cards | ⬜ | |
-| 009 | Feed Data & Hot Ranking Algorithm | ⬜ | |
-| 010 | Video Playback in Feed | ⬜ | |
-| 011 | Post Overlay & Interaction UI | ⬜ | |
-| 012 | Like Functionality | ⬜ | |
-| 013 | Post Creation UI | ⬜ | |
-| 014 | Media Upload & Processing | ⬜ | |
+| 008 | Post Creation UI | ⬜ | Media selection, pet selection, tagging |
+| 009 | Media Upload & Processing | ⬜ | Image/video upload, compression |
+| 010 | Feed UI - Vertical Swipe Cards | ⬜ | TikTok-style feed |
+| 011 | Feed Data & Hot Ranking Algorithm | ⬜ | Ranking, filtering, pagination |
+| 012 | Post Overlay & Interaction UI | ⬜ | Metadata display, action buttons |
+| 013 | Like Functionality | ⬜ | Paw-print likes, double-tap |
+| 014 | Video Playback in Feed | ⬜ | Autoplay, muting, lifecycle |
 | 015 | Add New Pet During Post Creation | ⬜ | |
 | 016 | Report Functionality | ⬜ | |
 | 017 | Share Functionality | ⬜ | |
@@ -169,12 +169,12 @@ Core tickets needed for a functional MVP:
 - [x] 005 - Authentication
 - [x] 006 - Auth Guards
 - [x] 007 - Onboarding
-- [ ] 008 - Feed UI
-- [ ] 009 - Feed Data
-- [ ] 011 - Post Overlay
-- [ ] 012 - Like Functionality
-- [ ] 013 - Post Creation UI
-- [ ] 014 - Media Upload
+- [ ] 008 - Post Creation UI
+- [ ] 009 - Media Upload
+- [ ] 010 - Feed UI
+- [ ] 011 - Feed Data
+- [ ] 012 - Post Overlay
+- [ ] 013 - Like Functionality
 - [ ] 019 - User Profile
 - [ ] 020 - Pet Profile
 - [ ] 021 - Follow System
@@ -212,4 +212,4 @@ Core tickets needed for a functional MVP:
 | 2026-01-29 | 005 | Completed - Auth store, welcome/login/signup/forgot-password screens |
 | 2026-01-30 | 006 | Completed - 3-state routing, onboarding add-pet, loading screen |
 | 2026-01-30 | 007 | Completed - Avatar upload, image compression, skip option, validation |
-
+| 2026-01-30 | 008-014 | Reordered - Post creation before feed for testability |

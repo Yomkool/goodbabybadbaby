@@ -1,4 +1,4 @@
-# Ticket 013: Post Creation UI
+# Ticket 008: Post Creation UI
 
 ## Summary
 Build the post creation flow UI including media selection, pet selection, and tagging.

@@ -4,7 +4,9 @@
       "Bash(npm run typecheck:*)",
       "Bash(npx expo install:*)",
       "Bash(npm install:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(del \"C:\\\\Users\\\\banno\\\\OneDrive\\\\Desktop\\\\goodbabybadbaby\\\\tickets\\\\013-post-creation-ui.md\" \"C:\\\\Users\\\\banno\\\\OneDrive\\\\Desktop\\\\goodbabybadbaby\\\\tickets\\\\014-media-upload.md\" \"C:\\\\Users\\\\banno\\\\OneDrive\\\\Desktop\\\\goodbabybadbaby\\\\tickets\\\\008-feed-ui.md\" \"C:\\\\Users\\\\banno\\\\OneDrive\\\\Desktop\\\\goodbabybadbaby\\\\tickets\\\\009-feed-data-hot-ranking.md\" \"C:\\\\Users\\\\banno\\\\OneDrive\\\\Desktop\\\\goodbabybadbaby\\\\tickets\\\\010-video-playback.md\" \"C:\\\\Users\\\\banno\\\\OneDrive\\\\Desktop\\\\goodbabybadbaby\\\\tickets\\\\011-post-overlay-ui.md\" \"C:\\\\Users\\\\banno\\\\OneDrive\\\\Desktop\\\\goodbabybadbaby\\\\tickets\\\\012-like-functionality.md\")",
+      "Bash(del \"C:\\\\Users\\\\banno\\\\OneDrive\\\\Desktop\\\\goodbabybadbaby\\\\tickets\\\\008-feed-ui.md\" \"C:\\\\Users\\\\banno\\\\OneDrive\\\\Desktop\\\\goodbabybadbaby\\\\tickets\\\\009-feed-data-hot-ranking.md\")"
     ]
   }
 }

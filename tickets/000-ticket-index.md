@@ -22,19 +22,19 @@ This document provides an index of all tickets for the Good Baby, Bad Baby app d
 
 ## Phase 2: Core Features (Tickets 008-018)
 
+### Posting (Create before View for testability)
+- **008** - Post Creation UI
+- **009** - Media Upload & Processing
+- **015** - Add New Pet During Post Creation
+
 ### Feed
-- **008** - Feed UI - Vertical Swipe Cards
-- **009** - Feed Data & Hot Ranking Algorithm
-- **010** - Video Playback in Feed
+- **010** - Feed UI - Vertical Swipe Cards
+- **011** - Feed Data & Hot Ranking Algorithm
+- **014** - Video Playback in Feed
 
 ### Post Interactions
-- **011** - Post Overlay & Interaction UI
-- **012** - Like Functionality
-
-### Posting
-- **013** - Post Creation UI
-- **014** - Media Upload & Processing
-- **015** - Add New Pet During Post Creation
+- **012** - Post Overlay & Interaction UI
+- **013** - Like Functionality
 
 ### Content Management
 - **016** - Report Functionality
@@ -114,7 +114,7 @@ This document provides an index of all tickets for the Good Baby, Bad Baby app d
 
 ### MVP (Launch-Ready)
 1. Foundation: 001-007
-2. Core Feed & Posting: 008-015, 036
+2. Core Posting & Feed: 008-015, 036
 3. Social Basics: 019-021
 4. Competition Core: 023, 026
 5. Backend Jobs: 032-034

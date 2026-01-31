@@ -1,4 +1,4 @@
-# Ticket 010: Video Playback in Feed
+# Ticket 014: Video Playback in Feed
 
 ## Summary
 Implement video playback with autoplay, muting, and proper lifecycle management.
@@ -34,7 +34,7 @@ Implement video playback with autoplay, muting, and proper lifecycle management.
 - Test on both iOS and Android for behavior consistency
 
 ## Dependencies
-- Ticket 008: Feed UI
+- Ticket 010: Feed UI
 
 ## Estimated Scope
 Medium

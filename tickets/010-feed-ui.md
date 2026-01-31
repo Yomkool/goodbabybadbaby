@@ -1,4 +1,4 @@
-# Ticket 008: Feed UI - Vertical Swipe Cards
+# Ticket 010: Feed UI - Vertical Swipe Cards
 
 ## Summary
 Build the main feed with TikTok-style full-screen vertical swipe cards.

@@ -31,7 +31,7 @@ Allow users to add a new pet inline during the post creation flow.
 
 ## Dependencies
 - Ticket 007: Onboarding (shared logic)
-- Ticket 013: Post Creation UI
+- Ticket 008: Post Creation UI
 
 ## Estimated Scope
 Small

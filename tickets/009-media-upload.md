@@ -1,4 +1,4 @@
-# Ticket 014: Media Upload & Processing
+# Ticket 009: Media Upload & Processing
 
 ## Summary
 Implement media upload pipeline for images and videos with optimization.
@@ -42,7 +42,7 @@ Implement media upload pipeline for images and videos with optimization.
 
 ## Dependencies
 - Ticket 002: Supabase Setup
-- Ticket 013: Post Creation UI
+- Ticket 008: Post Creation UI
 
 ## Estimated Scope
 Large

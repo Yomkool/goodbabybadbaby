@@ -1,4 +1,4 @@
-# Ticket 009: Feed Data & Hot Ranking Algorithm
+# Ticket 011: Feed Data & Hot Ranking Algorithm
 
 ## Summary
 Implement the data layer for the feed including the hot ranking algorithm and filtering.
@@ -43,12 +43,12 @@ Implement the data layer for the feed including the hot ranking algorithm and fi
 
 ## Technical Notes
 - Consider using Supabase RPC for complex ranking query
-- Hot score could be pre-calculated by cron job (see Ticket 030)
+- Hot score could be pre-calculated by cron job (see Ticket 032)
 - Use React Query or SWR for caching (optional)
 
 ## Dependencies
 - Ticket 003: Database Schema
-- Ticket 008: Feed UI
+- Ticket 010: Feed UI
 
 ## Estimated Scope
 Large

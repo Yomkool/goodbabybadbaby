@@ -1,4 +1,4 @@
-# Ticket 012: Like Functionality
+# Ticket 013: Like Functionality
 
 ## Summary
 Implement the paw-print like system with double-tap and button interactions.
@@ -40,7 +40,7 @@ Implement the paw-print like system with double-tap and button interactions.
 
 ## Dependencies
 - Ticket 003: Database Schema
-- Ticket 011: Post Overlay UI
+- Ticket 012: Post Overlay UI
 
 ## Estimated Scope
 Medium

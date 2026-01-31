@@ -1,4 +1,4 @@
-# Ticket 011: Post Overlay & Interaction UI
+# Ticket 012: Post Overlay & Interaction UI
 
 ## Summary
 Build the post overlay that shows metadata and action buttons, with toggle visibility.
@@ -36,7 +36,7 @@ Build the post overlay that shows metadata and action buttons, with toggle visib
 - Overlay should not block swipe gestures
 
 ## Dependencies
-- Ticket 008: Feed UI
+- Ticket 010: Feed UI
 
 ## Estimated Scope
 Medium
